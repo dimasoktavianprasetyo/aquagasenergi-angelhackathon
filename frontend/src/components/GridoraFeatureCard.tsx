@@ -6,6 +6,7 @@ interface GridoraFeatureCardProps {
   icon: React.ReactNode;
   title: string;
   value: string;
+  unit?: string;
   priorityText?: string;
   priorityColor?: 'green' | 'blue' | 'amber';
   benefitLabel: string;
@@ -25,6 +26,7 @@ export const GridoraFeatureCard: React.FC<GridoraFeatureCardProps> = ({
   icon,
   title,
   value,
+  unit,
   priorityText = 'High priority',
   priorityColor = 'green',
   benefitLabel,
@@ -52,61 +54,81 @@ export const GridoraFeatureCard: React.FC<GridoraFeatureCardProps> = ({
   };
 
   return (
-    <div className={`bg-[#141720] rounded-[32px] p-2.5 pb-4 border border-white/[0.08] shadow-2xl flex flex-col justify-between transition-all duration-300 hover:border-emerald-500/30 ${className}`}>
-      {/* Top Pure White / Off-White Card */}
-      <div className="bg-[#f2f4f7] rounded-[26px] p-6 md:p-7 text-slate-900 shadow-sm flex flex-col justify-between">
-        {/* Top Header Row */}
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-full bg-white shadow-sm border border-slate-200/90 flex items-center justify-center shrink-0 text-emerald-600">
-              {icon}
-            </div>
-            <div>
-              <span className="text-sm font-medium text-slate-700 block leading-tight">{title}</span>
-              <span className="text-2xl md:text-3xl font-extrabold tracking-tight text-slate-950 block mt-0.5 font-sans">
-                {value}
-              </span>
-            </div>
+    <div
+      className={`bg-white rounded-2xl p-5 border border-slate-200/80 shadow-2xs hover:shadow-sm transition-all flex flex-col justify-between ${className}`}
+    >
+      {/* Top Header Row */}
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center shrink-0 text-slate-700">
+            {icon}
           </div>
-          {priorityText && (
-            <span className={`px-3.5 py-1 rounded-full text-xs font-semibold shadow-sm shrink-0 ${getBadgeStyle()}`}>
-              {priorityText}
+          <span className="text-xs font-semibold text-slate-700 font-sans truncate">
+            {title}
+          </span>
+        </div>
+        {priorityText && (
+          <span
+            className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold shadow-2xs shrink-0 self-start ${getBadgeStyle()}`}
+          >
+            {priorityText}
+          </span>
+        )}
+      </div>
+
+      {/* Main Metric Value (Proportionate, Clean, Single-line) */}
+      <div className="mt-3 mb-2">
+        <div className="flex items-baseline gap-1.5 whitespace-nowrap">
+          <span className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 font-sans">
+            {value}
+          </span>
+          {unit && (
+            <span className="text-xs font-medium text-slate-500 font-mono">
+              {unit}
             </span>
           )}
         </div>
+      </div>
 
-        {/* Bottom Metric Row with Circular Gauge */}
-        <div className="flex items-end justify-between mt-6 pt-2">
-          <div>
-            <span className="text-xs font-medium text-slate-500 uppercase tracking-wider block">{benefitLabel}</span>
-            <span className={`text-2xl md:text-3xl font-bold block mt-1 font-sans ${benefitColor}`}>
-              {benefitValue}
-            </span>
-          </div>
-          <div className="shrink-0 pl-3">
-            <CircularGauge
-              value={gaugeValue}
-              max={gaugeMax}
-              size={98}
-              strokeWidth={8}
-              colorGradient={gaugeGradient}
-              textColor="dark"
-              trackColor="rgba(0, 0, 0, 0.07)"
-              unit={gaugeUnit}
-              sublabel={gaugeSublabel}
-            />
-          </div>
+      {/* Bottom Metric Row with Circular Gauge */}
+      <div className="flex items-end justify-between gap-2 mt-auto pt-2">
+        <div className="flex flex-col min-w-0">
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+            {benefitLabel}
+          </span>
+          <span
+            className={`text-base sm:text-lg font-bold font-sans mt-0.5 block truncate ${benefitColor}`}
+          >
+            {benefitValue}
+          </span>
+        </div>
+        <div className="shrink-0 pl-2">
+          <CircularGauge
+            value={gaugeValue}
+            max={gaugeMax}
+            size={68}
+            strokeWidth={6}
+            colorGradient={gaugeGradient}
+            textColor="dark"
+            trackColor="rgba(0, 0, 0, 0.05)"
+            unit={gaugeUnit}
+            sublabel={gaugeSublabel}
+          />
         </div>
       </div>
 
-      {/* Bottom Sub-card Drawer (Dark) */}
-      <div
-        onClick={onAction}
-        className={`px-5 pt-4 pb-2 flex items-center justify-between gap-3 text-xs text-slate-400 font-light leading-relaxed ${onAction ? 'cursor-pointer hover:text-slate-200' : ''}`}
-      >
-        <p className="line-clamp-2 pr-2">{description}</p>
-        <ChevronRight className="w-4 h-4 text-slate-500 shrink-0" />
-      </div>
+      {/* Subtle Description Footer */}
+      {description && (
+        <div
+          onClick={onAction}
+          className={`mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2 text-[11px] text-slate-500 font-light leading-relaxed ${
+            onAction ? 'cursor-pointer hover:text-slate-800' : ''
+          }`}
+        >
+          <p className="line-clamp-2">{description}</p>
+          {onAction && <ChevronRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />}
+        </div>
+      )}
     </div>
   );
 };

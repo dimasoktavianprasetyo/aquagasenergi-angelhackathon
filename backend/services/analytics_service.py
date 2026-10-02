@@ -223,8 +223,8 @@ class EnergyAnalyticsServiceServicer(pb2_grpc.EnergyAnalyticsServiceServicer):
                 total_wasted_energy += dev_gj
                 total_wasted_cost += cost_excess
                 cause = (
-                    "Konsumsi energi melebihi toleransi baseline (+1.5σ). "
-                    "Kemungkinan: rasio udara-bahan bakar berlebih, kerak/fouling boiler, atau kebocoran steam."
+                    "Konsumsi energi melebihi ambang batas statistik (+1.5σ). "
+                    "Panduan investigasi prioritas: Periksa rasio udara-bahan bakar (excess air), potensi kerak/fouling penukar panas, atau kebocoran steam line."
                 )
             else:
                 cause = "Konsumsi dalam batas kendali operasional wajar."
@@ -254,20 +254,20 @@ class EnergyAnalyticsServiceServicer(pb2_grpc.EnergyAnalyticsServiceServicer):
                 engineering_rationale="Memisahkan variabel produksi dan jam kerja agar tagihan bahan bakar mencerminkan efisiensi murni, bukan fluktuasi output."
             ),
             pb2.TraceabilityStep(
-                step_name="Evaluasi Goodness of Fit Baseline",
+                step_name="Evaluasi Goodness of Fit Baseline (In-Sample Fit)",
                 formula_applied="R² = 1 - (SS_res / SS_tot)",
                 input_parameters=f"Std Residual = {std_residual:.4f} GJ",
-                calculation_result=f"R² = {r2:.4f} ({'Model Sangat Akurat' if r2 > 0.8 else 'Perlu Koreksi Variabel Tambahan'})",
+                calculation_result=f"R² (In-Sample) = {r2:.4f} ({'Model Fit Sangat Baik' if r2 > 0.8 else 'Kesesuaian Cukup'})",
                 standard_reference="ASHRAE Guideline 14 & US DOE",
-                engineering_rationale="Nilai R² > 0.75 menunjukkan baseline valid digunakan sebagai acuan tolak ukur penghematan dan anomali."
+                engineering_rationale="Nilai R² > 0.75 pada in-sample fit mengonfirmasi kecocokan model regresi multivariat terhadap dataset historis yang dievaluasi."
             ),
             pb2.TraceabilityStep(
                 step_name="Kriteria Deteksi Anomali Pemborosan",
                 formula_applied="Threshold Anomali = E_actual > (E_baseline + 1.5 * σ)",
                 input_parameters=f"1.5 * σ = {1.5 * std_residual:.4f} GJ",
-                calculation_result=f"Ditemukan {sum(1 for a in anomaly_points if a.is_anomaly)} insiden anomali, potensi kerugian Rp {total_wasted_cost:,.0f}",
+                calculation_result=f"Ditemukan {sum(1 for a in anomaly_points if a.is_anomaly)} insiden anomali, estimasi deviasi biaya Rp {total_wasted_cost:,.0f}",
                 standard_reference="Statistical Process Control (SPC) for Industrial Energy",
-                engineering_rationale="Mendeteksi inefisiensi sesaat secara proaktif sebelum menjadi akumulasi biaya tinggi di akhir bulan."
+                engineering_rationale="Mendeteksi deviasi inefisiensi sesaat secara proaktif sebagai panduan triase investigasi teknisi lapangan."
             )
         ]
 

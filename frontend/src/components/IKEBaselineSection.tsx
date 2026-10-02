@@ -173,7 +173,7 @@ export const IKEBaselineSection: React.FC<IKEBaselineProps> = ({
           <div className="flex items-center gap-2.5 mb-4">
             <AlertOctagon className="w-5 h-5 text-rose-400" />
             <h3 className="text-sm font-bold text-rose-400 tracking-wide uppercase">
-              Rincian Insiden Anomali Pemborosan ({anomalyCount} Kejadian)
+              Panduan Investigasi Anomali & Deviasi Efisiensi ({anomalyCount} Kejadian)
             </h3>
           </div>
           <div className="overflow-x-auto">
@@ -185,7 +185,7 @@ export const IKEBaselineSection: React.FC<IKEBaselineProps> = ({
                   <th className="pb-3 px-3 font-semibold">Baseline (GJ)</th>
                   <th className="pb-3 px-3 font-semibold">Kelebihan</th>
                   <th className="pb-3 px-3 font-semibold">Estimasi Biaya Terbuang</th>
-                  <th className="pb-3 px-3 font-semibold">Diagnosa Kemungkinan Penyebab</th>
+                  <th className="pb-3 px-3 font-semibold">Panduan Investigasi (Operator Triase)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/[0.04]">
@@ -204,6 +204,9 @@ export const IKEBaselineSection: React.FC<IKEBaselineProps> = ({
               </tbody>
             </table>
           </div>
+          <p className="mt-3 text-[11px] text-slate-400 font-light leading-relaxed">
+            *Catatan Metodologi: Anomali dideteksi secara statistik melalui deviasi residual (+1.5σ) terhadap model regresi multivariat baseline. Penyebab di atas dirancang sebagai <em>investigation prompts</em> (panduan triase operasional) untuk memandu inspeksi fisik prioritas oleh operator boiler.
+          </p>
         </div>
       )}
     </div>

@@ -30,7 +30,7 @@ class CNGTransitionServiceServicer(pb2_grpc.CNGTransitionServiceServicer):
         current_price = request.current_fuel_price_idr or 14000.0  # Rp 14.000 / kg LPG
         current_eff = request.current_thermal_efficiency or 0.78   # 78% thermal efficiency
         
-        cng_price_mmbtu = request.cng_price_idr_per_mmbtu or 215000.0 # ~Rp 215.000/MMBTU (PT Aqua Gas Energy competitive pricing)
+        cng_price_mmbtu = request.cng_price_idr_per_mmbtu or 215000.0 # Parameter simulasi awal: ~Rp 215.000/MMBTU (Skenario pasokan PT Aqua Gas Energy)
         cng_eff = request.target_cng_efficiency or 0.84          # 84% modern gas burner efficiency
         retrofit_capex = request.retrofit_capex_idr or 150000000.0 # Rp 150 Juta dual-fuel burner & PRS setup
         
@@ -78,15 +78,15 @@ class CNGTransitionServiceServicer(pb2_grpc.CNGTransitionServiceServicer):
         is_recommended = cost_savings_pct > 15.0 and payback_months <= 24.0
         if is_recommended:
             rec_summary = (
-                f"SANGAT DIREKOMENDASIKAN: Konversi ke CNG menghasilkan penghematan biaya panas berguna sebesar "
-                f"{cost_savings_pct:.1f}% (Rp {annual_savings:,.0f}/tahun) dengan periode pengembalian modal (payback) "
+                f"HASIL SIMULASI KELAYAKAN TINGGI: Berdasarkan parameter input yang dimasukkan, konversi ke CNG memproyeksikan penghematan biaya panas berguna sebesar "
+                f"{cost_savings_pct:.1f}% (estimasi Rp {annual_savings:,.0f}/tahun) dengan perkiraan periode pengembalian modal (payback) "
                 f"{payback_months:.1f} bulan dan reduksi emisi CO2 sebesar {co2_reduction_pct:.1f}% ({co2_reduction_tonnes:.1f} ton/tahun). "
-                f"Pasokan dapat diintegrasikan dengan jaringan distribusi PT Aqua Gas Energi (AGE)."
+                f"Skenario pasokan dapat diselaraskan dengan rencana distribusi PT Aqua Gas Energi (AGE) setelah survei teknis."
             )
         else:
             rec_summary = (
-                f"PERTIMBANGAN TEKNIS KHUSUS: Penghematan diproyeksikan {cost_savings_pct:.1f}% dengan payback {payback_months:.1f} bulan. "
-                f"Perlu negosiasi tarif volume gas atau optimasi utilisasi jam operasi boiler sebelum investasi retrofit burner."
+                f"HASIL SIMULASI PERLU KAJIAN KHUSUS: Penghematan disimulasikan sebesar {cost_savings_pct:.1f}% dengan payback {payback_months:.1f} bulan. "
+                f"Disarankan penyesuaian parameter tarif volume gas atau audit jam operasional boiler sebelum investasi modifikasi burner."
             )
 
         # 6. Audit Trail for Traceability

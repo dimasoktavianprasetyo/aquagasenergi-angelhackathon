@@ -177,35 +177,34 @@ The platform supports dual temporal granularities to serve both high-level manag
 * **Daily Log Mode (90 Rows / 1 Quarter):** Corresponds to plant daily production logbooks. Consolidates 24-hour production output, operating hours, and total fuel burned. Highly responsive for executive review without client-side SVG rendering overhead.
 * **Hourly SCADA Mode (2,160 Rows / 90 Days):** Reflects digital instrumentation telemetry sampled hourly from SCADA systems. Captures diurnal shift variations (Day shift high load vs. night shift low load) and instantaneous burner idling.
 
-### 5.2 Case Study Datasets Built Into the System
-1. **Case Study 1: PT Indmira Global Energi (Agro-Boiler & Rotary Fertilizer Dryer)**
-   * **Fuel:** Industrial LPG ($LHV = 46.10\text{ MJ/kg}$).
-   * **Telemetry:** 90 daily rows and 2,160 hourly SCADA rows.
-   * **Characteristics:** Captures moisture variations across wet seasons (feedstock moisture $+15\%$), planned maintenance shutdowns (Days 15, 45, 75), standby warm-up idling (Day 28), and burner miscalibration anomalies (Days 36 and 68).
-   * **Model Fit:** $R^2 = 0.9238$ (Daily) and $R^2 = 0.9145$ (Hourly).
-   * **CNG Transition Outcome:** 37.7% reduction in useful energy costs, 352.8 tonnes $CO_2$/year reduced, payback within 0.5–1.2 months.
+### 5.2 3-Tier Data Architecture (Alpha Evaluation Methodology)
 
-2. **Case Study 2: US DOE Manufacturing Benchmark (Steam Boiler Solar / Diesel)**
-   * **Fuel:** Industrial Diesel ($LHV = 35.80\text{ MJ/L}$).
-   * **Telemetry:** 90 daily rows and 2,160 hourly SCADA rows.
-   * **Characteristics:** Calibrated against US Department of Energy Advanced Manufacturing Office (AMO) steam system profiles.
-   * **Model Fit:** $R^2 = 0.9625$ (Daily) and $R^2 = 0.9589$ (Hourly).
-   * **CNG Transition Outcome:** 58.5% reduction in useful energy costs, 833.7 tonnes $CO_2$/year reduced, payback within 0.3–1.0 months.
+To demonstrate the platform's robustness while maintaining strict scientific and commercial integrity, the Alpha Prototype evaluates energy analytics across three distinct data tiers:
 
-3. **Case Study 3: Nature Scientific Data Industrial Telemetry (60-Ton Superheated Steam Boiler)**
+1. **Tier 1: Open-Source Real Industrial Telemetry (Nature Scientific Data / Kaggle)**
    * **Source:** Open-access industrial telemetry published in *Nature Scientific Data* (2025).
+   * **Physical Asset:** 60-Ton Superheated Steam Industrial Boiler equipped with physical sensor instrumentation.
    * **Telemetry Volume:** 86,400 raw sensor records sampled at 5-second intervals over 5 days, aggregated into 119 hourly observations.
    * **Physical Sensors:** Main steam flow rate (`ZZQBCHLL.AV_0` avg $59.8\text{ ton/hr}$), steam temperature (`TE_8332A.AV_0` avg $537.5^\circ\text{C}$), economizer flue gas temperature (`TE_8319A.AV_0` avg $356.9^\circ\text{C}$), and excess $O_2$ (`AIR_8301A.AV_0` avg $2.09\%$).
-   * **Model Fit:** $R^2 = 0.9950$ (validating physical heat balance under ASME PTC 4).
+   * **Baseline Fit:** $R^2 = 0.9950$ (In-sample goodness-of-fit validating physical heat balance under ASME PTC 4).
 
-### 5.3 Macro-Financial Ground Truth: US DOE ITAC Database
-To validate financial projections, our analytics pipeline queried the official U.S. Department of Energy Industrial Training & Assessment Centers (ITAC) database (October 2026 release, 16.8 MB, 23,000+ plant audits, 170,000+ recommendations):
-* **Total Boiler Recommendations (ARC 2.2x):** 20,910 records.
-* **Fuel Switching & Combustion Recommendations (ARC 2.21 & 2.23):** 10,958 plants analyzed.
-* **Average Empirical Payback Period:** 1.50 years (18.0 months).
-* **Median Empirical Payback Period:** 1.04 years (12.5 months).
+2. **Tier 2: Calibrated Synthetic Scenario (PT Indmira Agro-Industrial Profile)**
+   * **Context:** Modeled scenario reflecting the operational parameters of PT Indmira's organic fertilizer granulation and biotechnology drying facilities in Sleman, Yogyakarta.
+   * **Fuel:** Industrial LPG ($LHV = 46.10\text{ MJ/kg}$).
+   * **Telemetry:** 90 daily rows and 2,160 hourly SCADA rows generated via calibrated stochastic modeling (`random.seed(42)`).
+   * **Simulated Operational Edge Cases:** Moisture variations across wet seasons (feedstock moisture $+15\%$), planned maintenance shutdowns (Days 15, 45, 75), standby warm-up idling (Day 28), and burner miscalibration anomalies (Days 36 and 68).
+   * **Baseline Fit:** $R^2 = 0.9238$ (Daily) and $R^2 = 0.9145$ (Hourly in-sample fit).
+   * **Simulated CNG Transition:** 37.7% reduction in useful energy costs, 352.8 tonnes $CO_2$/year reduction projection, with capital recovery estimated within 0.5–1.2 months based on configurable input assumptions.
 
-This real-world benchmark is surfaced dynamically in the Copilot Executive Decision Report to corroborate the platform's calculated payback estimates against global empirical evidence.
+3. **Tier 3: External Macro Benchmark Reference (US DOE ITAC Database)**
+   * **Reference Base:** Calibrated against empirical data from the U.S. Department of Energy Industrial Training & Assessment Centers (ITAC) database (170,000+ plant recommendations):
+     * **Fuel Switching & Combustion Recommendations (ARC 2.21 & 2.23):** 10,958 plant audits analyzed.
+     * **Empirical Median Payback Period:** 1.04 years (12.5 months).
+     * **Empirical Average Payback Period:** 1.50 years (18.0 months).
+   * **Role:** Acts as an external macro benchmark to compare the Copilot's scenario calculations against real-world global industrial track records.
+
+### 5.3 Operator Triage & "Investigation Prompts"
+Rather than presenting black-box AI diagnoses, the platform uses statistical process control ($+1.5\sigma$ residual threshold) to generate actionable **Investigation Prompts**. These guide plant technicians to check specific high-probability physical causes—such as excess air damper miscalibration, heat exchanger soot fouling, or steam line leaks—respecting the expertise of on-site plant engineers.
 
 ---
 

@@ -126,13 +126,35 @@ export const CircularGauge: React.FC<CircularGaugeProps> = ({
       </svg>
 
       {/* Center Numeric Value */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-        <span className={`text-2xl md:text-3xl font-normal font-sans tracking-tight ${textColor === 'dark' ? 'text-black' : 'text-white'}`}>
+      <div className="absolute inset-0 flex flex-col items-center justify-center text-center select-none pointer-events-none p-1">
+        <span
+          className={`font-sans tracking-tight leading-none ${
+            size >= 110
+              ? 'text-2xl md:text-3xl font-bold'
+              : size >= 85
+              ? 'text-lg font-bold'
+              : size >= 65
+              ? 'text-sm font-bold'
+              : 'text-xs font-bold'
+          } ${textColor === 'dark' ? 'text-slate-900' : 'text-white'}`}
+        >
           {Number.isInteger(value) ? value : value.toFixed(1)}
-          <span className={`text-sm font-normal ml-0.5 ${textColor === 'dark' ? 'text-slate-600' : 'text-slate-400'}`}>{unit}</span>
+          <span
+            className={`font-normal ml-0.5 ${
+              size >= 85 ? 'text-xs' : 'text-[9px]'
+            } ${textColor === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}
+          >
+            {unit}
+          </span>
         </span>
         {sublabel && (
-          <span className={`text-[9px] font-semibold uppercase tracking-wider ${textColor === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>{sublabel}</span>
+          <span
+            className={`font-semibold uppercase tracking-wider mt-0.5 leading-none ${
+              size >= 85 ? 'text-[9px]' : 'text-[7.5px]'
+            } ${textColor === 'dark' ? 'text-slate-400' : 'text-slate-400'}`}
+          >
+            {sublabel}
+          </span>
         )}
       </div>
     </div>

@@ -45,24 +45,27 @@ export const Header: React.FC<HeaderProps> = ({
   const caseOptions = [
     {
       id: 'INDMIRA' as const,
-      label: '1. PT Indmira Agro-Industrial (LPG)',
-      shortLabel: '1. PT Indmira (LPG)',
-      tag: 'LPG Baseline',
-      desc: 'Audit 90 hari boiler steam, anomali idle pembakaran'
+      label: '1. Skenario Indmira (Simulasi Terkalibrasi)',
+      shortLabel: '1. Indmira [Skenario Alpha]',
+      tag: 'Tier 2: Simulasi',
+      tierBadge: 'Simulasi Terkalibrasi',
+      desc: 'Skenario boiler & rotary dryer agro-industri terkalibrasi parameter teknis'
     },
     {
       id: 'US_DOE' as const,
-      label: '2. US DOE Benchmark (Solar)',
-      shortLabel: '2. US DOE (Solar)',
-      tag: 'Solar HSD',
-      desc: '10.958 rekomendasi audit boiler ITAC Database 2026'
+      label: '2. US DOE ITAC (Dataset Acuan Benchmark)',
+      shortLabel: '2. US DOE [Acuan Benchmark]',
+      tag: 'Tier 3: Benchmark',
+      tierBadge: 'Acuan Industri Global',
+      desc: 'Dataset simulasi dikalibrasi terhadap profil 10.958 rekomendasi audit ITAC'
     },
     {
       id: 'KAGGLE_REAL' as const,
-      label: '3. Kaggle 60T (Sensor Riil)',
-      shortLabel: '3. Kaggle 60T (Sensor)',
-      tag: 'IoT Sensor',
-      desc: 'Telemetri boiler industri 60 Ton/Jam stream riil'
+      label: '3. Kaggle / Nature (Telemetri Riil 60T)',
+      shortLabel: '3. Kaggle 60T [Open Data Riil]',
+      tag: 'Tier 1: Data Riil',
+      tierBadge: 'Open-Source Telemetry',
+      desc: 'Telemetri sensor riil boiler industri superheated steam 60 Ton/Jam'
     }
   ];
 
@@ -123,11 +126,16 @@ export const Header: React.FC<HeaderProps> = ({
       {/* Main Title & Action Row (Exact Clean Executive Style from Desain 2) */}
       <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 mt-6">
         <div>
-          <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-slate-900 font-sans">
-            Industrial Energy Efficiency Copilot
-          </h1>
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-slate-900 font-sans">
+              Industrial Energy Efficiency Copilot
+            </h1>
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
+              TKT 3 / Alpha Prototype
+            </span>
+          </div>
           <p className="text-xs md:text-sm text-slate-500 font-normal mt-1 leading-relaxed font-sans">
-            AI-powered forecasting and optimization for a cleaner, more profitable energy system.
+            Data-driven decision support & scenario simulation for industrial boiler decarbonization & CNG transition.
           </p>
         </div>
 

@@ -58,10 +58,10 @@ export const CNGSimulatorSection: React.FC<CNGSimulatorProps> = ({
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <span className="px-3 py-1 rounded-full bg-slate-100 text-slate-700 border border-slate-200 text-xs font-medium">
-            Jaringan Suplai: PT Aqua Gas Energi
+            Simulasi Skenario Pasokan AGE
           </span>
           <span className="px-3 py-1 rounded-full bg-slate-100 text-slate-700 border border-slate-200 text-xs font-medium">
-            Blue Flame Transition
+            Parameter Konfigurabel
           </span>
         </div>
       </div>
@@ -125,7 +125,7 @@ export const CNGSimulatorSection: React.FC<CNGSimulatorProps> = ({
           <div className="pt-3 border-t border-slate-200/80 space-y-2">
             <div className="flex justify-between text-xs text-slate-600 font-medium">
               <span className="flex items-center gap-1 text-slate-800 font-semibold">
-                <span>Tarif CNG (PT Aqua Gas Energi):</span>
+                <span>Asumsi Tarif CNG (Skenario AGE):</span>
               </span>
               <span className="font-sans font-bold text-cyan-700">
                 Rp {params.cng_price_idr_per_mmbtu.toLocaleString('id-ID')} / MMBTU
@@ -195,9 +195,10 @@ export const CNGSimulatorSection: React.FC<CNGSimulatorProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {/* Gridora Card 1: Solusi Transisi CNG (AGE) */}
                   <GridoraFeatureCard
-                    icon={<Flame className="w-6 h-6 text-emerald-600" />}
-                    title="Solusi Transisi CNG (AGE)"
-                    value={`Rp ${cngResult.cng_cost_per_useful_gj.toLocaleString('id-ID', { maximumFractionDigits: 0 })} / GJ`}
+                    icon={<Flame className="w-4 h-4 text-emerald-600" />}
+                    title="Skenario Transisi CNG (AGE)"
+                    value={`Rp ${cngResult.cng_cost_per_useful_gj.toLocaleString('id-ID', { maximumFractionDigits: 0 })}`}
+                    unit="/ GJ"
                     priorityText="High priority"
                     priorityColor="green"
                     benefitLabel="Expected Benefit"
@@ -211,13 +212,14 @@ export const CNGSimulatorSection: React.FC<CNGSimulatorProps> = ({
 
                   {/* Gridora Card 2: Bahan Bakar Eksisting */}
                   <GridoraFeatureCard
-                    icon={<Flame className="w-6 h-6 text-sky-600" />}
+                    icon={<Flame className="w-4 h-4 text-sky-600" />}
                     title={`Bahan Bakar Eksisting (${params.current_fuel})`}
-                    value={`Rp ${cngResult.current_cost_per_useful_gj.toLocaleString('id-ID', { maximumFractionDigits: 0 })} / GJ`}
+                    value={`Rp ${cngResult.current_cost_per_useful_gj.toLocaleString('id-ID', { maximumFractionDigits: 0 })}`}
+                    unit="/ GJ"
                     priorityText="Medium priority"
                     priorityColor="blue"
                     benefitLabel="Biaya Eksisting"
-                    benefitValue={`Rp ${params.current_fuel_price_idr.toLocaleString('id-ID')}`}
+                    benefitValue={`Rp ${params.current_fuel_price_idr.toLocaleString('id-ID')} / kg`}
                     benefitColor="text-sky-600"
                     gaugeValue={Number((params.current_thermal_efficiency * 100).toFixed(0))}
                     gaugeGradient="blue"
@@ -276,7 +278,7 @@ export const CNGSimulatorSection: React.FC<CNGSimulatorProps> = ({
                   </div>
                   <div>
                     <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900">
-                      Rekomendasi Keputusan Copilot (Traceable Verdict):
+                      Evaluasi Kelayakan Skenario (Simulation Decision-Support):
                     </h4>
                     <p className="text-xs mt-1.5 leading-relaxed text-slate-600 font-normal">
                       {cngResult.recommendation_summary}
@@ -291,6 +293,12 @@ export const CNGSimulatorSection: React.FC<CNGSimulatorProps> = ({
             </div>
           )}
         </div>
+      </div>
+
+      {/* Bottom Simulation Assumption Disclaimer */}
+      <div className="mt-6 pt-4 border-t border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] text-slate-500 font-light">
+        <span>*Catatan Integritas: Seluruh kalkulasi tekno-ekonomi merupakan hasil simulasi berbasis parameter input yang dapat disesuaikan, bukan komitmen penawaran tarif komersial final AGE.</span>
+        <span className="font-mono text-[10px] text-slate-400 shrink-0">LHV Basis: 1.055 GJ/MMBTU</span>
       </div>
     </div>
   );

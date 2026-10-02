@@ -93,12 +93,12 @@ export const DataIngestionSection: React.FC<DataIngestionProps> = ({
             <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mb-3.5 transition-all text-slate-700 group-hover:bg-slate-200">
               <UploadCloud className="w-6 h-6" />
             </div>
-            <p className="text-sm font-bold text-slate-900 font-sans">Klik untuk Unggah CSV Fasilitas</p>
+            <p className="text-sm font-bold text-slate-900 font-sans">Klik untuk Unggah CSV Fasilitas Mandiri</p>
             <p className="text-xs text-slate-500 mt-1 font-sans max-w-xs">
               Kolom wajib: timestamp, production_output, operating_hours, fuel_consumption
             </p>
             <span className="mt-3 text-xs text-slate-400 font-normal">
-              Atau gunakan pilihan dataset di atas
+              Atau uji dengan 3-Tier Kasus Industri (Sensor Riil / Skenario Simulasi) di atas
             </span>
           </div>
         </div>
