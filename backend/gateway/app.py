@@ -218,15 +218,14 @@ async def websocket_copilot_endpoint(websocket: WebSocket):
                         })
                         await asyncio.sleep(step_delay)
 
-                # Stage 1: Ingestion & Quality check (0 -> 25 dalam 2.5s lalu jeda 2 detik)
+                # Stage 1: Ingestion & Quality check (0 -> 25 dalam 0.8s)
                 msg_1 = "Memanggil gRPC Analytics: Validasi Integritas & Filter Fisik Data CSV..."
-                await stream_range(0, 25, 2.5, "INGESTION", msg_1)
+                await stream_range(0, 25, 0.8, "INGESTION", msg_1)
                 
-                # Jeda 2 detik saat validasi gRPC berjalan nyata
                 quality_report = grpc_client.call_ingest_and_audit(
                     csv_raw.encode("utf-8"), "dataset.csv", fuel_type
                 )
-                await asyncio.sleep(2.0)
+                await asyncio.sleep(0.3)
 
                 normalized_points = [
                     {
@@ -243,30 +242,31 @@ async def websocket_copilot_endpoint(websocket: WebSocket):
                     for pt in quality_report.normalized_data
                 ]
 
-                # Stage 2: Normalization (26 -> 50 dalam 2.5s lalu jeda 2 detik)
+                # Stage 2: Normalization (26 -> 50 dalam 0.8s)
                 msg_2 = f"Normalisasi Kalor Berhasil: {quality_report.accepted_rows} baris dikonversi ke basis GJ/MMBTU."
-                await stream_range(26, 50, 2.5, "NORMALIZATION", msg_2)
-                await asyncio.sleep(2.0)
+                await stream_range(26, 50, 0.8, "NORMALIZATION", msg_2)
+                await asyncio.sleep(0.3)
 
-                # Stage 3: Baseline & Anomaly (51 -> 75 dalam 2.5s lalu jeda 2 detik)
+                # Stage 3: Baseline & Anomaly (51 -> 75 dalam 0.8s)
                 msg_3 = "Memanggil gRPC Analytics: Regresi Baseline US DOE & Deteksi Anomali Operasional (+1.5σ)..."
-                await stream_range(51, 75, 2.5, "BASELINE_DOE", msg_3)
+                await stream_range(51, 75, 0.8, "BASELINE_DOE", msg_3)
                 
-                # Jeda 2 detik saat komputasi statistik OLS berjalan
                 baseline_res = grpc_client.call_baseline_and_anomalies(normalized_points)
-                await asyncio.sleep(2.0)
+                await asyncio.sleep(0.3)
 
-                # Stage 4: CNG Simulation (76 -> 99 dalam 2.5s lalu jeda 1 detik)
+                # Stage 4: CNG Simulation (76 -> 99 dalam 0.8s)
                 msg_4 = "Memanggil gRPC CNG Service: Menghitung Biaya Panas Berguna (LHV) & Reduksi Emisi CO₂..."
-                await stream_range(76, 99, 2.5, "CNG_SIMULATION", msg_4)
+                await stream_range(76, 99, 0.8, "CNG_SIMULATION", msg_4)
                 
                 # Annual useful demand based on actual dataset sum scaled to year
                 total_actual_gj = baseline_res.total_actual_energy_gj
                 annual_useful = total_actual_gj * 12.0 * 0.78 # Extrapolate to 12 months useful heat
                 cng_params["annual_energy_demand_gj"] = annual_useful
                 cng_params["current_fuel"] = fuel_type
+                if fuel_type == "CNG" and cng_params.get("current_fuel_price_idr", 0) < 50000:
+                    cng_params["current_fuel_price_idr"] = 245000.0
                 cng_res = grpc_client.call_simulate_cng(cng_params)
-                await asyncio.sleep(1.0)
+                await asyncio.sleep(0.2)
 
                 # Final Completed Payload
                 anomalies = [

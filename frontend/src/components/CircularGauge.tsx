@@ -12,6 +12,7 @@ interface CircularGaugeProps {
   trackColor?: string;
   variant?: 'circle' | 'squircle';
   rx?: number;
+  transitionDuration?: string;
 }
 
 export const CircularGauge: React.FC<CircularGaugeProps> = ({
@@ -25,11 +26,13 @@ export const CircularGauge: React.FC<CircularGaugeProps> = ({
   textColor = 'white',
   trackColor,
   variant = 'squircle',
-  rx
+  rx,
+  transitionDuration = 'duration-200'
 }) => {
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const clampedValue = Math.min(Math.max(value, 0), max);
+  const displayVal = Math.max(0, value);
   const strokeDashoffsetCircle = circumference - (clampedValue / max) * circumference;
   const gradientId = `gauge-gradient-${colorGradient}-${Math.random().toString(36).substring(2, 9)}`;
 
@@ -94,7 +97,7 @@ export const CircularGauge: React.FC<CircularGaugeProps> = ({
               strokeLinecap="round"
               fill="transparent"
               pathLength="100"
-              className="transition-all duration-1000 ease-out"
+              className={`transition-all ${transitionDuration} ease-out`}
             />
           </>
         ) : (
@@ -119,7 +122,7 @@ export const CircularGauge: React.FC<CircularGaugeProps> = ({
               strokeDashoffset={strokeDashoffsetCircle}
               strokeLinecap="round"
               fill="transparent"
-              className="transition-all duration-1000 ease-out"
+              className={`transition-all ${transitionDuration} ease-out`}
             />
           </>
         )}
@@ -138,7 +141,7 @@ export const CircularGauge: React.FC<CircularGaugeProps> = ({
               : 'text-xs font-bold'
           } ${textColor === 'dark' ? 'text-slate-900' : 'text-white'}`}
         >
-          {Number.isInteger(value) ? value : value.toFixed(1)}
+          {Number.isInteger(displayVal) ? displayVal : displayVal.toFixed(1)}
           <span
             className={`font-normal ml-0.5 ${
               size >= 85 ? 'text-xs' : 'text-[9px]'

@@ -10,7 +10,7 @@ interface RightSidebarPanelProps {
   onOpenSimulator: () => void;
 }
 
-export const RightSidebarPanel: React.FC<RightSidebarPanelProps> = ({
+export const RightSidebarPanel: React.FC<RightSidebarPanelProps> = React.memo(({
   baseline,
   cng,
   currentFuel,
@@ -19,7 +19,8 @@ export const RightSidebarPanel: React.FC<RightSidebarPanelProps> = ({
   const rSquared = baseline ? (baseline.model.r_squared * 100).toFixed(0) : '92';
   const annualSavings = cng ? (cng.annual_gross_savings_idr / 1000000).toLocaleString('id-ID', { maximumFractionDigits: 0 }) : '321';
   const paybackMonths = cng ? cng.payback_period_months.toFixed(1) : '6.2';
-  const savingsPct = cng ? cng.cost_savings_percent.toFixed(1) : '58.5';
+  const rawSavings = cng ? cng.cost_savings_percent : 58.5;
+  const savingsPct = Math.max(0, rawSavings).toFixed(1);
   const cngCost = cng ? cng.cng_cost_per_useful_gj.toLocaleString('id-ID', { maximumFractionDigits: 0 }) : '156.402';
   const existingCost = cng ? cng.current_cost_per_useful_gj.toLocaleString('id-ID', { maximumFractionDigits: 0 }) : '376.540';
   const co2Tonnes = cng ? cng.co2_reduction_tonnes.toFixed(1) : '48.2';
@@ -82,7 +83,7 @@ export const RightSidebarPanel: React.FC<RightSidebarPanelProps> = ({
             Komparasi Biaya Useful Heat & Emisi
           </h4>
           <span className="text-xs font-semibold text-slate-800 bg-slate-100 px-3 py-1 rounded-full border border-slate-200">
-            Hemat {savingsPct}%
+            {rawSavings > 0 ? `Hemat ${savingsPct}%` : 'Optimal (0%)'}
           </span>
         </div>
 
@@ -144,4 +145,4 @@ export const RightSidebarPanel: React.FC<RightSidebarPanelProps> = ({
       </div>
     </div>
   );
-};
+});

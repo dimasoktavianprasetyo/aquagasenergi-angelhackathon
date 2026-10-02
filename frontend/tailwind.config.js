@@ -15,8 +15,8 @@ export default {
         }
       },
       fontFamily: {
-        sans: ['"Google Sans"', '"Plus Jakarta Sans"', 'system-ui', '-apple-system', 'sans-serif'],
-        mono: ['JetBrains Mono', 'monospace'],
+        sans: ['"Google Sans Flex"', '"Google Sans Flex Variable"', '"Google Sans"', 'sans-serif'],
+        mono: ['"JetBrains Mono"', 'monospace'],
       }
     },
   },

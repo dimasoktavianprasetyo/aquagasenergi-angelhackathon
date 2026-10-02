@@ -42,6 +42,13 @@ class CNGTransitionServiceServicer(pb2_grpc.CNGTransitionServiceServicer):
             lhv_current = LHV_DIESEL_GJ_PER_LITER
             unit_name = "liter"
             co2_factor_current = CO2_FACTOR_DIESEL
+        elif current_fuel == "CNG":
+            # Existing retail/utility CNG: measured per MMBTU
+            lhv_current = MMBTU_TO_GJ
+            unit_name = "MMBTU"
+            co2_factor_current = CO2_FACTOR_CNG
+            if current_price < 50000.0:
+                current_price = 245000.0  # Default retail non-contractual CNG price Rp 245.000 / MMBTU
         else: # Default LPG
             lhv_current = LHV_LPG_GJ_PER_KG
             unit_name = "kg"
@@ -82,6 +89,11 @@ class CNGTransitionServiceServicer(pb2_grpc.CNGTransitionServiceServicer):
                 f"{cost_savings_pct:.1f}% (estimasi Rp {annual_savings:,.0f}/tahun) dengan perkiraan periode pengembalian modal (payback) "
                 f"{payback_months:.1f} bulan dan reduksi emisi CO2 sebesar {co2_reduction_pct:.1f}% ({co2_reduction_tonnes:.1f} ton/tahun). "
                 f"Skenario pasokan dapat diselaraskan dengan rencana distribusi PT Aqua Gas Energi (AGE) setelah survei teknis."
+            )
+        elif cost_savings_pct <= 0:
+            rec_summary = (
+                f"SIMULASI TIDAK MENGHASILKAN PENGHEMATAN: Berdasarkan parameter input saat ini, biaya panas berguna CNG lebih tinggi atau setara dengan bahan bakar eksisting "
+                f"(selisih {cost_savings_pct:.1f}%). Disarankan meninjau ulang rasio tarif atau efisiensi boiler sebelum mempertimbangkan konversi."
             )
         else:
             rec_summary = (

@@ -150,9 +150,12 @@ class EnergyAnalyticsServiceServicer(pb2_grpc.EnergyAnalyticsServiceServicer):
             accepted += 1
 
         is_valid = accepted > 0
+        accepted_fmt = f"{accepted:,}".replace(",", ".")
+        rejected_fmt = f"{rejected:,}".replace(",", ".")
+        issues_fmt = f"{len(issues):,}".replace(",", ".")
         summary = (
-            f"Mutu Data Terverifikasi: {accepted} baris diterima, {rejected} baris ditolak. "
-            f"Ditemukan {len(issues)} catatan mutu/anomali data."
+            f"Mutu Data Terverifikasi: {accepted_fmt} baris diterima, {rejected_fmt} baris ditolak. "
+            f"Ditemukan {issues_fmt} catatan mutu/anomali data."
         )
 
         return pb2.QualityReport(

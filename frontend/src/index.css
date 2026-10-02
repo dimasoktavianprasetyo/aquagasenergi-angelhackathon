@@ -1,6 +1,25 @@
+@import "https://cdn.jsdelivr.net/npm/@fontsource-variable/google-sans-flex@latest/index.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Google Sans Flex Font Alias Mapping */
+@font-face {
+  font-family: 'Google Sans Flex';
+  src: url('https://cdn.jsdelivr.net/npm/@fontsource-variable/google-sans-flex@latest/files/google-sans-flex-latin-wght-normal.woff2') format('woff2-variations');
+  font-weight: 1 1000;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Google Sans';
+  src: url('https://cdn.jsdelivr.net/npm/@fontsource-variable/google-sans-flex@latest/files/google-sans-flex-latin-wght-normal.woff2') format('woff2-variations');
+  font-weight: 1 1000;
+  font-style: normal;
+  font-display: swap;
+}
 
 :root {
   --bg-main: #edf0f5;
@@ -20,15 +39,44 @@
   --accent-amber: #f59e0b;
   --accent-coral: #ea580c;
 
-  font-family: 'Google Sans', 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Google Sans Flex', 'Google Sans Flex Variable', 'Google Sans', sans-serif;
   color-scheme: light;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 1.5rem;
+}
+
+/* Clean Minimal Light Scrollbar (Prevents dark/black browser default scrollbar) */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.4);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.6);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.4) transparent;
 }
 
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-  font-family: 'Google Sans', 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Google Sans Flex', 'Google Sans Flex Variable', 'Google Sans', sans-serif;
 }
 
 body {
@@ -36,13 +84,18 @@ body {
   color: #0f172a;
   min-height: 100vh;
   overflow-x: hidden;
-  font-family: 'Google Sans', 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Google Sans Flex', 'Google Sans Flex Variable', 'Google Sans', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-button, input, select, textarea, optgroup, option {
-  font-family: 'Google Sans', 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+button,
+input,
+select,
+textarea,
+optgroup,
+option {
+  font-family: 'Google Sans Flex', 'Google Sans Flex Variable', 'Google Sans', sans-serif !important;
 }
 
 code,
@@ -282,23 +335,23 @@ pre,
   box-shadow: 0 3px 8px rgba(15, 23, 42, 0.08);
 }
 
-/* Custom scrollbars */
+/* Custom scrollbars - Clean light minimalist */
 ::-webkit-scrollbar {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #0b0e14;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #1e293b;
-  border-radius: 4px;
+  background: #cbd5e1;
+  border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #22c55e;
+  background: #94a3b8;
 }
 
 /* Range sliders */
@@ -426,4 +479,36 @@ input[type="range"]::-webkit-slider-thumb:hover {
 .btn-secondary:hover {
   background: rgba(51, 65, 85, 0.8);
   border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Silky-Smooth 60FPS Hardware-Accelerated Blur Reveal Overlay */
+@keyframes blurOverlayFade {
+  0% {
+    opacity: 1;
+  }
+
+  30% {
+    opacity: 0.85;
+  }
+
+  70% {
+    opacity: 0.35;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+.blur-reveal-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 40;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  background-color: rgba(237, 240, 245, 0.08);
+  animation: blurOverlayFade 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: opacity;
+  transform: translateZ(0);
 }

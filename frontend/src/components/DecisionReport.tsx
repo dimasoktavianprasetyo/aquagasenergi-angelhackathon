@@ -8,7 +8,7 @@ interface DecisionReportProps {
   activeCase?: 'INDMIRA' | 'US_DOE' | 'KAGGLE_REAL';
 }
 
-export const DecisionReport: React.FC<DecisionReportProps> = ({ data, onOpenAudit, activeCase = 'INDMIRA' }) => {
+const DecisionReportComponent: React.FC<DecisionReportProps> = ({ data, onOpenAudit, activeCase = 'INDMIRA' }) => {
   if (!data) return null;
 
   const { quality, baseline, cng } = data;
@@ -133,10 +133,14 @@ export const DecisionReport: React.FC<DecisionReportProps> = ({ data, onOpenAudi
             <span>Ringkasan Eksekutif & Rekomendasi Solusi</span>
           </h3>
           <p className="text-slate-600 font-light leading-relaxed">
-            Berdasarkan analisis normalisasi energi metodologi US DOE terhadap <strong>{quality.accepted_rows} titik data</strong>, intensitas konsumsi energi rata-rata fasilitas tercatat sebesar <strong>{baseline.average_ike.toFixed(3)} GJ/Ton</strong> dengan korelasi model baseline <strong>R² = {(baseline.model.r_squared * 100).toFixed(1)}% (In-Sample Goodness-of-Fit)</strong>. Ditemukan indikasi anomali operasional akumulatif sebesar <strong>{baseline.total_wasted_energy_gj.toFixed(1)} GJ</strong> (estimasi deviasi energi <strong>Rp {baseline.total_wasted_cost_idr.toLocaleString('id-ID')}</strong>) yang dipetakan sebagai panduan investigasi (<em>investigation prompts</em>) untuk inspeksi rasio pembakaran dan anomali konsumsi saat status produksi nol (*idle waste*).
+            Berdasarkan analisis normalisasi energi metodologi US DOE terhadap <strong>{quality.accepted_rows.toLocaleString('id-ID')} titik data</strong>, intensitas konsumsi energi rata-rata fasilitas tercatat sebesar <strong>{baseline.average_ike.toFixed(3)} GJ/Ton</strong> dengan korelasi model baseline <strong>R² = {(baseline.model.r_squared * 100).toFixed(1)}% (In-Sample Goodness-of-Fit)</strong>. Ditemukan indikasi anomali operasional akumulatif sebesar <strong>{baseline.total_wasted_energy_gj.toFixed(1)} GJ</strong> (estimasi deviasi energi <strong>Rp {baseline.total_wasted_cost_idr.toLocaleString('id-ID')}</strong>) yang dipetakan sebagai panduan investigasi (<em>investigation prompts</em>) untuk inspeksi rasio pembakaran dan anomali konsumsi saat status produksi nol (*idle waste*).
           </p>
           <p className="text-slate-600 font-light leading-relaxed">
-            Dari sisi simulasi tekno-ekonomi hilirisasi energi, konversi bahan bakar ke CNG (Compressed Natural Gas) menunjukkan kelayakan kuat berdasarkan asumsi parameter input yang dapat disesuaikan. Dengan parameter awal pasokan AGE (asumsi Rp 215.000/MMBTU), biaya energi panas berguna disimulasikan turun dari <strong>Rp {cng.current_cost_per_useful_gj.toLocaleString('id-ID', { maximumFractionDigits: 0 })}/GJ</strong> menjadi <strong>Rp {cng.cng_cost_per_useful_gj.toLocaleString('id-ID', { maximumFractionDigits: 0 })}/GJ</strong> (potensi penghematan biaya energi <strong>{cng.cost_savings_percent.toFixed(1)}%</strong>). Pada skenario CAPEX retrofit saat ini, estimasi titik impas (<em>Payback Period</em>) tercapai dalam <strong>{cng.payback_period_months.toFixed(1)} bulan</strong> serta potensi reduksi jejak karbon sebesar <strong>{cng.co2_reduction_tonnes.toFixed(1)} Ton CO₂/tahun ({cng.co2_reduction_percent.toFixed(1)}%)</strong>.
+            Dari sisi simulasi tekno-ekonomi hilirisasi energi, konversi bahan bakar ke CNG (Compressed Natural Gas) {cng.cost_savings_percent > 0 ? (
+              <>menunjukkan kelayakan kuat berdasarkan asumsi parameter input yang dapat disesuaikan. Dengan skenario pasokan AGE (asumsi Rp 215.000/MMBTU), biaya energi panas berguna disimulasikan turun dari <strong>Rp {cng.current_cost_per_useful_gj.toLocaleString('id-ID', { maximumFractionDigits: 0 })}/GJ</strong> menjadi <strong>Rp {cng.cng_cost_per_useful_gj.toLocaleString('id-ID', { maximumFractionDigits: 0 })}/GJ</strong> (potensi penghematan biaya energi <strong>{cng.cost_savings_percent.toFixed(1)}%</strong>). Pada skenario CAPEX retrofit saat ini, estimasi titik impas (<em>Payback Period</em>) tercapai dalam <strong>{cng.payback_period_months.toFixed(1)} bulan</strong> serta potensi reduksi jejak karbon sebesar <strong>{cng.co2_reduction_tonnes.toFixed(1)} Ton CO₂/tahun ({cng.co2_reduction_percent.toFixed(1)}%)</strong>.</>
+            ) : (
+              <>menunjukkan biaya energi panas berguna berada pada posisi setara atau optimal terhadap harga bahan bakar saat ini (biaya eksisting <strong>Rp {cng.current_cost_per_useful_gj.toLocaleString('id-ID', { maximumFractionDigits: 0 })}/GJ</strong> vs CNG <strong>Rp {cng.cng_cost_per_useful_gj.toLocaleString('id-ID', { maximumFractionDigits: 0 })}/GJ</strong>). Namun dari aspek keberlanjutan industri, transisi ke gas alam tetap memberikan reduksi emisi gas rumah kaca sebesar <strong>{cng.co2_reduction_tonnes.toFixed(1)} Ton CO₂/tahun ({cng.co2_reduction_percent.toFixed(1)}%)</strong>.</>
+            )}
           </p>
         </div>
 
@@ -152,3 +156,5 @@ export const DecisionReport: React.FC<DecisionReportProps> = ({ data, onOpenAudi
     </div>
   );
 };
+
+export const DecisionReport = React.memo(DecisionReportComponent);

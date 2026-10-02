@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Header } from './components/Header';
 import { FloatingSidebarDock } from './components/FloatingSidebarDock';
 import { TopKpiCards } from './components/TopKpiCards';
 import { RightSidebarPanel } from './components/RightSidebarPanel';
 import { DataIngestionSection } from './components/DataIngestionSection';
-import { IKEBaselineSection } from './components/IKEBaselineSection';
+import { IKEBaselineSection, AnomalyInvestigationTable } from './components/IKEBaselineSection';
 import { CNGSimulatorSection } from './components/CNGSimulatorSection';
 import { DecisionReport } from './components/DecisionReport';
 import { TraceabilityModal } from './components/TraceabilityModal';
@@ -13,13 +13,30 @@ import { getSampleDataset, CaseStudyType, GranularityType, INDMIRA_AGRO_CSV } fr
 import { PipelineCompletePayload, WebSocketMessage } from './types';
 import { PipelineLoadingModal } from './components/PipelineLoadingModal';
 import { Activity, ShieldCheck, Flame, RefreshCw } from 'lucide-react';
+import bgImage from './assets/BG.png';
 
 export const App: React.FC = () => {
   const [wsConnected, setWsConnected] = useState<boolean>(false);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
+  const [isPageRevealing, setIsPageRevealing] = useState<boolean>(false);
+  const prevProcessingRef = useRef<boolean>(false);
   const [progress, setProgress] = useState<number>(0);
   const [stageMessage, setStageMessage] = useState<string>('');
-  
+  const currentRunIdRef = useRef<number>(0);
+  const [runSessionId, setRunSessionId] = useState<number>(1);
+
+  // Trigger silky-smooth 60FPS defocus-to-focus reveal when processing completes
+  useEffect(() => {
+    if (prevProcessingRef.current && !isProcessing) {
+      setIsPageRevealing(true);
+      const timer = setTimeout(() => {
+        setIsPageRevealing(false);
+      }, 900);
+      return () => clearTimeout(timer);
+    }
+    prevProcessingRef.current = isProcessing;
+  }, [isProcessing]);
+
   const [activeCase, setActiveCase] = useState<CaseStudyType>('INDMIRA');
   const [granularity, setGranularity] = useState<GranularityType>('DAILY');
   const [selectedFuel, setSelectedFuel] = useState<string>('LPG');
@@ -40,7 +57,8 @@ export const App: React.FC = () => {
     copilotSocket.connect(
       (msg: WebSocketMessage) => {
         if (msg.type === 'PROGRESS') {
-          setProgress(msg.progress || 0);
+          // Jaminan monotonik: Angka progress hanya boleh naik, tidak boleh turun selama loading berlangsung
+          setProgress((prev) => Math.max(prev, msg.progress || 0));
           setStageMessage(msg.message || '');
         } else if (msg.type === 'PIPELINE_COMPLETE') {
           setProgress(100);
@@ -50,7 +68,7 @@ export const App: React.FC = () => {
           }
           setTimeout(() => {
             setIsProcessing(false);
-          }, 800);
+          }, 550);
         }
       },
       (connected: boolean) => {
@@ -63,48 +81,65 @@ export const App: React.FC = () => {
   }, []);
 
   const runPipeline = async (csvData: string, fuelType: string, currentParams = cngParams) => {
-    setIsProcessing(true);
+    const runId = ++currentRunIdRef.current;
+    setRunSessionId((prev) => prev + 1);
     setProgress(0);
+    setIsProcessing(true);
     setStageMessage('Memanggil gRPC Analytics: Validasi Integritas Data CSV...');
 
     const paramsToSend = { ...currentParams, current_fuel: fuelType };
 
     const sent = copilotSocket.sendAction('RUN_FULL_PIPELINE', {
+      run_id: runId,
       csv_raw: csvData,
       fuel_type: fuelType,
       cng_params: paramsToSend
     });
 
-    // If WebSocket is not open, use resilient 5-second paced REST fallback
+    // If WebSocket is not open, use resilient paced REST fallback with runId cancellation guard
     if (!sent) {
       try {
+        if (currentRunIdRef.current !== runId) return;
         setStageMessage('Memanggil gRPC Analytics: Validasi Integritas Data CSV...');
         setProgress(20);
-        await new Promise((r) => setTimeout(r, 1200));
+        await new Promise((r) => setTimeout(r, 800));
 
+        if (currentRunIdRef.current !== runId) return;
         setStageMessage('Normalisasi Kalor Berhasil: titik data dikonversi ke basis GJ/MMBTU.');
         setProgress(45);
-        await new Promise((r) => setTimeout(r, 1300));
+        await new Promise((r) => setTimeout(r, 900));
 
+        if (currentRunIdRef.current !== runId) return;
         setStageMessage('Regresi Baseline US DOE & Deteksi Anomali Operasional (+1.5σ)...');
         setProgress(70);
-        await new Promise((r) => setTimeout(r, 1300));
+        await new Promise((r) => setTimeout(r, 900));
 
+        if (currentRunIdRef.current !== runId) return;
         setStageMessage('Menghitung Biaya Panas Berguna (LHV) & Reduksi Emisi CO₂...');
         setProgress(90);
         const result = await copilotSocket.runPipelineRestFallback(csvData, fuelType, paramsToSend);
-        await new Promise((r) => setTimeout(r, 1200));
 
+        if (currentRunIdRef.current !== runId) return;
+        await new Promise((r) => setTimeout(r, 600));
+
+        if (currentRunIdRef.current !== runId) return;
         setPipelineResult(result);
         setProgress(100);
         setStageMessage('Analisis Selesai via REST Gateway.');
         setTimeout(() => {
-          setIsProcessing(false);
-        }, 800);
+          if (currentRunIdRef.current === runId) {
+            setIsProcessing(false);
+          }
+        }, 500);
       } catch (err) {
+        if (currentRunIdRef.current !== runId) return;
         console.error('REST Fallback Error:', err);
         setStageMessage('Koneksi backend belum aktif. Pastikan backend/run_all.py berjalan.');
-        setTimeout(() => setIsProcessing(false), 1500);
+        setTimeout(() => {
+          if (currentRunIdRef.current === runId) {
+            setIsProcessing(false);
+          }
+        }, 1500);
       }
     }
   };
@@ -192,11 +227,47 @@ export const App: React.FC = () => {
     }
   };
 
+  const handleOpenAudit = useCallback(() => {
+    setIsAuditModalOpen(true);
+  }, []);
+
+  const handleCloseAudit = useCallback(() => {
+    setIsAuditModalOpen(false);
+  }, []);
+
   return (
-    <div className="min-h-screen bg-[#edf0f5] text-slate-900 py-6 px-3 sm:px-5 md:px-8 selection:bg-emerald-500 selection:text-white font-sans">
-      <div className="max-w-[1560px] mx-auto flex gap-6 items-start">
+    <div className="relative min-h-screen text-slate-900 py-6 px-3 sm:px-5 md:px-8 selection:bg-emerald-500 selection:text-white font-sans">
+      {/* Blurred Industrial Energy Background Layer */}
+      <div
+        className="fixed inset-0 pointer-events-none -z-10 bg-cover bg-center bg-no-repeat scale-105"
+        style={{
+          backgroundImage: `url(${bgImage})`,
+          filter: 'blur(6px)',
+          backgroundColor: '#edf0f5',
+        }}
+      />
+
+      {/* Real-time Streaming Pipeline Loading Modal with Smooth Dissolve */}
+      <PipelineLoadingModal
+        key={`loading-modal-${runSessionId}`}
+        isOpen={isProcessing}
+        progress={progress}
+        stageMessage={stageMessage}
+      />
+
+      {/* Silky-Smooth 60FPS Hardware-Accelerated Blur Reveal Overlay */}
+      {isPageRevealing && <div className="blur-reveal-overlay" />}
+
+      {/* Traceability Audit Trail Modal */}
+      <TraceabilityModal
+        isOpen={isAuditModalOpen}
+        onClose={handleCloseAudit}
+        auditTrail={pipelineResult?.audit_trail || []}
+      />
+
+      <div className="max-w-[1560px] mx-auto flex gap-3 sm:gap-6 items-start relative z-0">
         {/* Left Floating Capsule Dock (Exact from user reference screenshot) */}
-        <FloatingSidebarDock onOpenAudit={() => setIsAuditModalOpen(true)} />
+        <FloatingSidebarDock onOpenAudit={handleOpenAudit} />
 
         {/* Main Executive Content Canvas */}
         <main className="flex-1 min-w-0">
@@ -207,13 +278,6 @@ export const App: React.FC = () => {
             onSelectCase={handleSelectCase}
             isProcessing={isProcessing}
             onTriggerUpload={handleHeaderUploadClick}
-          />
-
-          {/* Real-time Streaming Pipeline Loading Modal */}
-          <PipelineLoadingModal
-            isOpen={isProcessing}
-            progress={progress}
-            stageMessage={stageMessage}
           />
 
           {/* Top 4 Floating KPI Cards (Exact from user reference screenshot) */}
@@ -250,6 +314,9 @@ export const App: React.FC = () => {
             </div>
           </div>
 
+          {/* Full-width Anomaly Investigation Guide Table (reaches all the way to the right) */}
+          <AnomalyInvestigationTable baselineData={pipelineResult?.baseline || null} />
+
           {/* Section 1: Ingestion & Quality (Upload CSV Dataset & Sensor Integrity Audit) */}
           <DataIngestionSection
             qualityReport={pipelineResult?.quality || null}
@@ -257,7 +324,19 @@ export const App: React.FC = () => {
             selectedFuel={selectedFuel}
             onFuelChange={(fuel) => {
               setSelectedFuel(fuel);
-              const updated = { ...cngParams, current_fuel: fuel };
+              let defaultPrice = cngParams.current_fuel_price_idr;
+              if (fuel === 'CNG') {
+                defaultPrice = 245000; // Standard non-contractual CNG price Rp 245.000/MMBTU
+              } else if (fuel === 'DIESEL') {
+                defaultPrice = 15500;  // Solar Industri Rp 15.500/liter
+              } else {
+                defaultPrice = 14000;  // LPG Industri Rp 14.000/kg
+              }
+              const updated = {
+                ...cngParams,
+                current_fuel: fuel,
+                current_fuel_price_idr: defaultPrice
+              };
               setCngParams(updated);
               runPipeline(csvContent, fuel, updated);
             }}
@@ -276,27 +355,21 @@ export const App: React.FC = () => {
           {/* Section 4: Decision Support Report */}
           <DecisionReport
             data={pipelineResult}
-            onOpenAudit={() => setIsAuditModalOpen(true)}
+            onOpenAudit={handleOpenAudit}
             activeCase={activeCase}
           />
 
-          {/* Traceability Audit Trail Modal */}
-          <TraceabilityModal
-            isOpen={isAuditModalOpen}
-            onClose={() => setIsAuditModalOpen(false)}
-            auditTrail={pipelineResult?.audit_trail || []}
-          />
 
-          {/* Hackathon Footer */}
-          <footer className="mt-14 pt-8 pb-12 border-t border-slate-200/80 text-center text-xs text-slate-500 space-y-2 font-light">
-            <p className="font-semibold text-slate-700">
+          {/* Hackathon Footer - Solid White Card (No Blur) */}
+          <footer className="mt-12 mb-10 bg-white border border-slate-200 rounded-lg py-6 px-6 text-center text-xs text-slate-600 shadow-xs space-y-2">
+            <p className="font-bold text-slate-800 text-sm">
               Industrial Energy Efficiency Copilot • Prioritas 1: Industrial Energy Efficiency Copilot
             </p>
-            <p>
+            <p className="text-slate-600">
               ANGEL Innovation Hackathon 2026 | Pengusul: <span className="text-cyan-700 font-semibold">PT Aqua Gas Energi (AGE)</span> | Target Klien: <span className="text-emerald-700 font-semibold">PT Indmira Global Energi</span>
             </p>
-            <p className="text-[11px] text-slate-400">
-              Tim Pengusul: Dimas Oktavian Prasetyo (Product Lead & UI/UX) & Tim Rekayasa Termal PT Aqua Gas Energi
+            <p className="text-[11px] text-slate-500 font-normal">
+              Tim Pengusul: Dimas Oktavian Prasetyo (Product Lead &amp; UI/UX) &amp; Tim Rekayasa Termal PT Aqua Gas Energi
             </p>
           </footer>
         </main>

@@ -1,5 +1,12 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Flame, Cpu, RefreshCw, Search, ChevronLeft, ChevronRight, ChevronDown, UploadCloud, Check } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
+import mainImg from '../assets/Main.png';
+import indmiraImg from '../assets/INDMIRA.png';
+import usdoeImg from '../assets/USDOE.png';
+import kaggleImg from '../assets/Kaggle.png';
+import upCsvImg from '../assets/UploadSCV-New.png';
+import simulasiUlangImg from '../assets/Simulasikan.png';
+import bgImage from '../assets/BG.png';
 
 interface HeaderProps {
   wsConnected: boolean;
@@ -9,248 +16,239 @@ interface HeaderProps {
   onTriggerUpload?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({
+const HeaderComponent: React.FC<HeaderProps> = ({
   wsConnected,
   activeCase,
   onSelectCase,
   isProcessing,
   onTriggerUpload
 }) => {
-  const cases: ('INDMIRA' | 'US_DOE' | 'KAGGLE_REAL')[] = ['INDMIRA', 'US_DOE', 'KAGGLE_REAL'];
-  const currentIndex = cases.indexOf(activeCase);
-
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsDropdownOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const handlePrevCase = () => {
-    const nextIndex = (currentIndex - 1 + cases.length) % cases.length;
-    onSelectCase(cases[nextIndex]);
-  };
-
-  const handleNextCase = () => {
-    const nextIndex = (currentIndex + 1) % cases.length;
-    onSelectCase(cases[nextIndex]);
-  };
-
-  const caseOptions = [
+  const scenarios = [
     {
       id: 'INDMIRA' as const,
-      label: '1. Skenario Indmira (Simulasi Terkalibrasi)',
+      label: 'Skenario Indmira (Simulasi Terkalibrasi)',
       shortLabel: '1. Indmira [Skenario Alpha]',
-      tag: 'Tier 2: Simulasi',
-      tierBadge: 'Simulasi Terkalibrasi',
-      desc: 'Skenario boiler & rotary dryer agro-industri terkalibrasi parameter teknis'
+      tier: 'Tier 2: Simulasi',
+      image: indmiraImg,
     },
     {
       id: 'US_DOE' as const,
-      label: '2. US DOE ITAC (Dataset Acuan Benchmark)',
+      label: 'US DOE ITAC (Dataset Acuan Benchmark)',
       shortLabel: '2. US DOE [Acuan Benchmark]',
-      tag: 'Tier 3: Benchmark',
-      tierBadge: 'Acuan Industri Global',
-      desc: 'Dataset simulasi dikalibrasi terhadap profil 10.958 rekomendasi audit ITAC'
+      tier: 'Tier 3: Benchmark',
+      image: usdoeImg,
     },
     {
       id: 'KAGGLE_REAL' as const,
-      label: '3. Kaggle / Nature (Telemetri Riil 60T)',
-      shortLabel: '3. Kaggle 60T [Open Data Riil]',
-      tag: 'Tier 1: Data Riil',
-      tierBadge: 'Open-Source Telemetry',
-      desc: 'Telemetri sensor riil boiler industri superheated steam 60 Ton/Jam'
-    }
+      label: 'Kaggle / Nature (Telemetri Riil 60T)',
+      shortLabel: '3. Kaggle 60T [Data Riil]',
+      tier: 'Tier 1: Data Riil',
+      image: kaggleImg,
+    },
   ];
+
+  const currentIndex = scenarios.findIndex((s) => s.id === activeCase);
+  const safeIndex = currentIndex >= 0 ? currentIndex : 0;
+  const [previewIndex, setPreviewIndex] = useState<number>(safeIndex);
+
+  useEffect(() => {
+    setPreviewIndex(safeIndex);
+  }, [safeIndex]);
+
+  const currentScenario = scenarios[previewIndex];
+  const isApplied = currentScenario.id === activeCase;
+
+  const handlePrev = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setPreviewIndex((prev) => (prev - 1 + scenarios.length) % scenarios.length);
+  };
+
+  const handleNext = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setPreviewIndex((prev) => (prev + 1) % scenarios.length);
+  };
+
+  const handleApply = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onSelectCase(currentScenario.id);
+  };
 
   return (
     <header className="mb-7" id="app-header">
-      {/* Top Desktop Navigation Bar (Exact Gridora Desktop Style) */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pb-5 border-b border-slate-200/80">
-        {/* Left: Brand Icon Pill & Top Nav Pills */}
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center text-white shadow-md shrink-0">
-            <Flame className="w-5 h-5 text-emerald-400" />
-          </div>
+      {/* 
+        Layout:
+        - Kolom 1 (Kiri): MAIN.png (Judul Utama)
+        - Kolom 2 (Tengah): Carousel (INDMIRA / USDOE / KAGGLE di 1 posisi dengan tombol < dan >)
+        - Kolom 3 (Kanan): Kartu 3 & 4 Kecil Atas-Bawah (UpCSV & SimulasiUlang) dengan ukuran rasio asli 16:9 (Uncropped)
+      */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 lg:gap-4 items-stretch">
 
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <a href="#section-data-ingestion" className="btn-pill-nav">
-              Overview
-            </a>
-            <a href="#section-ike-baseline" className="btn-pill-nav-active">
-              Forecast & Balancing
-            </a>
-            <a href="#section-cng-simulator" className="btn-pill-nav">
-              Operations
-            </a>
-            <a href="#section-decision-report" className="btn-pill-nav">
-              Assets & Reports
-            </a>
-            <span className="text-slate-300 mx-1 hidden md:inline">|</span>
-            <div className="hidden md:flex items-center gap-2 text-xs text-slate-500 font-mono">
-              <span className="flex items-center gap-1.5">
-                <span className={`w-2 h-2 rounded-full ${wsConnected ? 'bg-emerald-500 animate-ping' : 'bg-rose-500'}`}></span>
-                <span className={wsConnected ? 'text-emerald-700 font-medium' : 'text-rose-600'}>
-                  {wsConnected ? 'WS: 8000' : 'WS Offline'}
-                </span>
-              </span>
-              <span className="text-slate-300">•</span>
-              <span className="text-slate-500 flex items-center gap-1">
-                <Cpu className="w-3.5 h-3.5 text-slate-600" />
-                <span>gRPC: 50051</span>
-              </span>
-            </div>
+        {/* 1. MAIN CARD (Judul Utama - Sebelah Kiri, Ukuran Asli 16:9) */}
+        <div className="lg:col-span-5 w-full min-w-0 max-w-full relative rounded-2xl md:rounded-[22px] overflow-hidden border border-white/60 shadow-xs bg-white/40 backdrop-blur-xl aspect-[1672/941] group flex items-center justify-center">
+          {/* Blurred Background Texture Layer */}
+          <div
+            className="absolute inset-0 pointer-events-none bg-cover bg-center opacity-45 scale-105"
+            style={{
+              backgroundImage: `url(${bgImage})`,
+              filter: 'blur(8px)',
+            }}
+          />
+
+          <img
+            src={mainImg}
+            alt="Industrial Energy Efficiency Copilot - Main"
+            className="w-full h-full object-contain select-none transition-transform duration-500 group-hover:scale-[1.01] relative z-[1]"
+            draggable={false}
+          />
+
+          {/* Soft Bottom Space Blur Gradient */}
+          <div className="absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-white/40 via-white/10 to-transparent backdrop-blur-sm pointer-events-none z-[2]" />
+
+          {/* TKT Status Badge (Solid Green Pill, No AI dot) */}
+          <div className="absolute top-2.5 left-2.5 bg-[#16a34a] text-white px-3 py-1 rounded-full text-[10px] font-bold shadow-xs pointer-events-none select-none z-10 tracking-wide uppercase">
+            TKT 3 / Alpha
           </div>
         </div>
 
-        {/* Right: Search & Team Profile Avatar */}
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-white border border-slate-200/80 flex items-center justify-center text-slate-600 shadow-xs hover:bg-slate-50 cursor-pointer transition-all">
-            <Search className="w-4 h-4" />
-          </div>
-          <div className="flex items-center gap-2 pl-1 pr-3 py-1 bg-white border border-slate-200/80 rounded-full shadow-xs">
-            <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-emerald-600 to-green-500 text-white flex items-center justify-center font-bold text-xs shadow-sm">
-              AG
-            </div>
-            <span className="text-xs font-semibold text-slate-800 font-sans hidden sm:inline">PT Aqua Gas Energi</span>
-          </div>
-        </div>
-      </div>
+        {/* 2. SCENARIO CAROUSEL (INDMIRA, KAGGLE, USDOE di 1 Posisi dengan < >, Ukuran Asli 16:9) */}
+        <div className="lg:col-span-5 w-full min-w-0 max-w-full relative rounded-2xl md:rounded-[22px] overflow-hidden border border-white/60 shadow-xs bg-white/40 backdrop-blur-xl aspect-[1672/941] group flex items-center justify-center">
+          {/* Blurred Background Texture Layer */}
+          <div
+            className="absolute inset-0 pointer-events-none bg-cover bg-center opacity-45 scale-105"
+            style={{
+              backgroundImage: `url(${bgImage})`,
+              filter: 'blur(8px)',
+            }}
+          />
 
-      {/* Main Title & Action Row (Exact Clean Executive Style from Desain 2) */}
-      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 mt-6">
-        <div>
-          <div className="flex items-center gap-2.5 flex-wrap">
-            <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-slate-900 font-sans">
-              Industrial Energy Efficiency Copilot
-            </h1>
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
-              TKT 3 / Alpha Prototype
-            </span>
-          </div>
-          <p className="text-xs md:text-sm text-slate-500 font-normal mt-1 leading-relaxed font-sans">
-            Data-driven decision support & scenario simulation for industrial boiler decarbonization & CNG transition.
-          </p>
-        </div>
+          <div className="relative w-full h-full flex items-center justify-center overflow-hidden z-[1]">
+            <img
+              src={currentScenario.image}
+              alt={currentScenario.label}
+              key={currentScenario.id}
+              className="w-full h-full object-contain select-none transition-all duration-300 animate-in fade-in"
+              draggable={false}
+            />
 
-        {/* Right: Dataset Switcher + Upload CSV + Simulasi Ulang (All in ONE single sleek row with IDENTICAL h-10 HEIGHT) */}
-        <div className="flex items-center gap-2.5 flex-wrap self-stretch lg:self-auto justify-start lg:justify-end">
-          {/* Custom Case Study Switcher Dropdown (Height: h-10) */}
-          <div ref={dropdownRef} className="relative">
-            <div className="h-10 flex items-center bg-white border border-slate-200/80 rounded-full shadow-2xs px-1 text-xs text-slate-700 font-medium">
-              <button
-                onClick={handlePrevCase}
-                className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-900 transition-colors shrink-0"
-                title="Kasus Sebelumnya"
-              >
-                <ChevronLeft className="w-3.5 h-3.5" />
-              </button>
+            {/* Soft Bottom Space Blur Gradient */}
+            <div className="absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-white/40 via-white/10 to-transparent backdrop-blur-sm pointer-events-none z-[5]" />
 
+            {/* Bottom Navigation Dock: [<] [dots] [>] | [Apply] */}
+            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-2 z-20 bg-slate-900/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 shadow-lg">
+              {/* Prev Button (<) */}
               <button
                 type="button"
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="flex items-center gap-2 px-2.5 py-1 text-xs font-semibold text-slate-900 hover:text-slate-950 transition-colors cursor-pointer select-none"
+                onClick={handlePrev}
+                className="w-7 h-7 rounded-full bg-white/15 hover:bg-white/30 text-white flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                title="Skenario Sebelumnya"
+                aria-label="Previous Scenario"
               >
-                <span className="truncate max-w-[210px] text-left">
-                  {caseOptions.find((c) => c.id === activeCase)?.shortLabel || 'Pilih Kasus'}
-                </span>
-                <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180 text-slate-900' : ''}`} />
+                <ChevronLeft className="w-4 h-4 stroke-[2.5]" />
               </button>
 
+              {/* Dot & Pill Indicators */}
+              <div className="flex items-center gap-1.5 px-1">
+                {scenarios.map((sc, idx) => (
+                  <button
+                    key={sc.id}
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setPreviewIndex(idx);
+                    }}
+                    className={`transition-all rounded-full cursor-pointer ${
+                      idx === previewIndex
+                        ? 'w-4 h-1.5 bg-emerald-400 shadow-xs'
+                        : 'w-1.5 h-1.5 bg-white/60 hover:bg-white'
+                    }`}
+                    title={sc.label}
+                    aria-label={sc.label}
+                  />
+                ))}
+              </div>
+
+              {/* Next Button (>) */}
               <button
-                onClick={handleNextCase}
-                className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-900 transition-colors shrink-0"
-                title="Kasus Berikutnya"
+                type="button"
+                onClick={handleNext}
+                className="w-7 h-7 rounded-full bg-white/15 hover:bg-white/30 text-white flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                title="Skenario Berikutnya"
+                aria-label="Next Scenario"
               >
-                <ChevronRight className="w-3.5 h-3.5" />
+                <ChevronRight className="w-4 h-4 stroke-[2.5]" />
+              </button>
+
+              {/* Divider */}
+              <div className="w-px h-4 bg-white/20 mx-1" />
+
+              {/* Apply Button (Solid Pill, No AI dots/icons, Blue #0284c7 when Applied) */}
+              <button
+                type="button"
+                onClick={handleApply}
+                disabled={isProcessing}
+                className={`px-3.5 py-1 rounded-full text-xs font-bold transition-all tracking-normal cursor-pointer select-none ${
+                  isApplied
+                    ? 'bg-[#0284c7] hover:bg-[#0369a1] text-white shadow-xs'
+                    : 'bg-[#16a34a] hover:bg-[#15803d] text-white shadow-xs hover:scale-105 active:scale-95'
+                }`}
+                title={isApplied ? 'Skenario ini sedang aktif (Klik untuk muat ulang)' : 'Terapkan skenario yang dipilih'}
+              >
+                {isApplied ? 'Applied' : 'Apply'}
               </button>
             </div>
+          </div>
+        </div>
 
-            {/* Custom Floating Dropdown Menu Card */}
-            {isDropdownOpen && (
-              <div className="absolute left-0 sm:right-0 sm:left-auto mt-2 w-72 sm:w-80 bg-white rounded-2xl shadow-xl border border-slate-200/90 py-2 z-50 animate-in fade-in zoom-in-95">
-                <div className="px-3.5 py-1.5 border-b border-slate-100 flex items-center justify-between mb-1">
-                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                    Pilih Kasus Industri
-                  </span>
-                  <span className="text-[10px] text-slate-500 font-medium bg-slate-100 px-2 py-0.5 rounded-full">
-                    3 Skenario
-                  </span>
-                </div>
-                <div className="p-1.5 space-y-1">
-                  {caseOptions.map((opt) => {
-                    const isSelected = activeCase === opt.id;
-                    return (
-                      <button
-                        key={opt.id}
-                        type="button"
-                        onClick={() => {
-                          onSelectCase(opt.id);
-                          setIsDropdownOpen(false);
-                        }}
-                        className={`w-full text-left p-3 rounded-xl transition-all flex items-start justify-between gap-3 cursor-pointer ${
-                          isSelected
-                            ? 'bg-slate-100/90 text-slate-900 shadow-2xs'
-                            : 'hover:bg-slate-50 text-slate-700 hover:text-slate-950'
-                        }`}
-                      >
-                        <div className="flex-1 min-w-0">
-                          <span className={`text-xs font-semibold block ${isSelected ? 'text-slate-950' : 'text-slate-800'}`}>
-                            {opt.label}
-                          </span>
-                          <span className="text-[11px] text-slate-500 font-light block mt-0.5 leading-relaxed">
-                            {opt.desc}
-                          </span>
-                        </div>
-                        <div className="flex flex-col items-end gap-1 shrink-0 pt-0.5">
-                          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-                            isSelected
-                              ? 'bg-slate-900 text-white'
-                              : 'bg-slate-100 text-slate-600'
-                          }`}>
-                            {opt.tag}
-                          </span>
-                          {isSelected && (
-                            <Check className="w-3.5 h-3.5 text-emerald-600 mt-1" />
-                          )}
-                        </div>
-                      </button>
-                    );
-                  })}
+        {/* 3 & 4. ACTION BUTTONS: KECIL ATAS-BAWAH (PAS / FLUSH TANPA BAR PUTIH) */}
+        <div className="lg:col-span-2 w-full min-w-0 max-w-full flex flex-row lg:flex-col justify-between items-center gap-2.5 lg:gap-3">
+
+          {/* Card 3: UploadCSV New Button */}
+          <button
+            id="btn-upload-dataset-header"
+            type="button"
+            onClick={onTriggerUpload}
+            className="flex-1 lg:flex-none aspect-square w-auto h-full max-h-[calc(50%-6px)] max-w-full relative rounded-xl md:rounded-[18px] overflow-hidden border border-white/60 shadow-xs bg-white/40 backdrop-blur-xl hover:border-emerald-400 hover:shadow-md transition-all duration-200 active:scale-[0.98] group cursor-pointer flex items-center justify-center p-0"
+            title="Upload CSV Dataset Fasilitas"
+          >
+            <img
+              src={upCsvImg}
+              alt="Upload CSV"
+              className="w-full h-full object-cover select-none group-hover:scale-[1.02] transition-transform duration-300 block"
+              draggable={false}
+            />
+          </button>
+
+          {/* Card 4: Simulasikan Button */}
+          <button
+            type="button"
+            onClick={() => onSelectCase(activeCase)}
+            disabled={isProcessing}
+            className={`flex-1 lg:flex-none aspect-square w-auto h-full max-h-[calc(50%-6px)] max-w-full relative rounded-xl md:rounded-[18px] overflow-hidden border border-white/60 shadow-xs bg-white/40 backdrop-blur-xl hover:border-sky-400 hover:shadow-md transition-all duration-200 active:scale-[0.98] group cursor-pointer flex items-center justify-center p-0 ${
+              isProcessing ? 'opacity-70 cursor-wait' : ''
+            }`}
+            title="Simulasikan Ulang Skenario"
+          >
+            <img
+              src={simulasiUlangImg}
+              alt="Simulasikan Ulang"
+              className="w-full h-full object-cover select-none group-hover:scale-[1.02] transition-transform duration-300 block"
+              draggable={false}
+            />
+            {isProcessing && (
+              <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px] flex items-center justify-center z-10">
+                <div className="bg-white/95 rounded-full px-2.5 py-1 shadow-lg flex items-center gap-1.5 text-slate-900 text-[10px] font-semibold">
+                  <RefreshCw className="w-3 h-3 text-emerald-600 animate-spin" />
+                  <span>Memproses...</span>
                 </div>
               </div>
             )}
-          </div>
-
-          {/* Upload CSV Button (Height: h-10) */}
-          <button
-            id="btn-upload-dataset-header"
-            onClick={onTriggerUpload}
-            className="h-10 flex items-center gap-2 bg-white hover:bg-slate-50 border border-slate-200/80 text-slate-700 px-4 rounded-full text-xs font-semibold shadow-2xs transition-all hover:border-slate-300"
-            title="Unggah File CSV Dataset Fasilitas"
-          >
-            <UploadCloud className="w-4 h-4 text-emerald-600" />
-            <span>Upload CSV</span>
           </button>
 
-          {/* Black Pill Button (Simulasi Ulang) (Height: h-10) */}
-          <button
-            onClick={() => onSelectCase(activeCase)}
-            disabled={isProcessing}
-            className="h-10 inline-flex items-center gap-2 bg-[#0f172a] hover:bg-black text-white px-5 rounded-full text-xs font-semibold shadow-xs transition-all hover:-translate-y-0.5"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 text-emerald-400 ${isProcessing ? 'animate-spin' : ''}`} />
-            <span>Simulasi Ulang</span>
-          </button>
         </div>
+
       </div>
     </header>
   );
 };
 
+export const Header = React.memo(HeaderComponent);

@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { UploadCloud, CheckCircle2, AlertTriangle, FileSpreadsheet, Layers, ShieldCheck, HelpCircle, FileCheck, AlertCircle } from 'lucide-react';
 import { QualityReport } from '../types';
 import { CircularGauge } from './CircularGauge';
@@ -11,7 +11,7 @@ interface DataIngestionProps {
   isProcessing: boolean;
 }
 
-export const DataIngestionSection: React.FC<DataIngestionProps> = ({
+const DataIngestionSectionComponent: React.FC<DataIngestionProps> = ({
   qualityReport,
   onFileUpload,
   selectedFuel,
@@ -19,6 +19,46 @@ export const DataIngestionSection: React.FC<DataIngestionProps> = ({
   isProcessing
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isDragging) setIsDragging(true);
+  };
+
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      if (!file.name.toLowerCase().endsWith('.csv')) {
+        alert('Mohon seret file dengan format .csv');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const text = event.target?.result as string;
+        onFileUpload(text, file.name, selectedFuel);
+      };
+      reader.readAsText(file);
+    }
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -88,12 +128,28 @@ export const DataIngestionSection: React.FC<DataIngestionProps> = ({
           />
           <div
             onClick={() => fileInputRef.current?.click()}
-            className="border-2 border-dashed border-slate-300 hover:border-slate-500 bg-slate-50/70 hover:bg-slate-100/70 p-7 rounded-[24px] cursor-pointer text-center transition-all flex flex-col items-center justify-center group h-full min-h-[220px]"
+            onDragOver={handleDragOver}
+            onDragEnter={handleDragEnter}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            className={`border-2 border-dashed p-7 rounded-[24px] cursor-pointer text-center transition-all flex flex-col items-center justify-center group h-full min-h-[220px] select-none ${
+              isDragging
+                ? 'border-emerald-600 bg-emerald-50/90 scale-[1.02] shadow-md ring-4 ring-emerald-500/20'
+                : 'border-slate-300 hover:border-slate-500 bg-slate-50/70 hover:bg-slate-100/70'
+            }`}
           >
-            <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mb-3.5 transition-all text-slate-700 group-hover:bg-slate-200">
+            <div
+              className={`w-12 h-12 rounded-full flex items-center justify-center mb-3.5 transition-all shadow-2xs ${
+                isDragging
+                  ? 'bg-emerald-600 text-white animate-bounce'
+                  : 'bg-slate-100 text-slate-700 group-hover:bg-slate-200'
+              }`}
+            >
               <UploadCloud className="w-6 h-6" />
             </div>
-            <p className="text-sm font-bold text-slate-900 font-sans">Klik untuk Unggah CSV Fasilitas Mandiri</p>
+            <p className="text-sm font-bold text-slate-900 font-sans">
+              {isDragging ? 'Lepaskan File CSV di Sini' : 'Tarik & Seret File CSV atau Klik untuk Unggah'}
+            </p>
             <p className="text-xs text-slate-500 mt-1 font-sans max-w-xs">
               Kolom wajib: timestamp, production_output, operating_hours, fuel_consumption
             </p>
@@ -110,26 +166,33 @@ export const DataIngestionSection: React.FC<DataIngestionProps> = ({
               {/* Primary Stats Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {/* Card 1: Circular Gauge Validity */}
-                <div className="bg-white p-5 rounded-[24px] border border-slate-200/80 flex items-center justify-between shadow-2xs">
-                  <div>
+                <div className="bg-white p-5 rounded-[24px] border border-slate-200/80 flex items-center justify-between gap-3 shadow-2xs">
+                  <div className="min-w-0">
                     <span className="text-xs text-slate-500 font-medium block">Integritas Data</span>
-                    <p className="text-2xl font-bold font-sans text-slate-900 mt-1">
-                      {qualityReport.accepted_rows} <span className="text-xs text-slate-500 font-normal">/ {qualityReport.total_rows} baris</span>
-                    </p>
+                    <div className="flex items-baseline gap-1 mt-1 flex-wrap">
+                      <span className="text-2xl font-bold font-sans text-slate-900 tracking-tight">
+                        {qualityReport.accepted_rows.toLocaleString('id-ID')}
+                      </span>
+                      <span className="text-xs text-slate-500 font-normal whitespace-nowrap">
+                        / {qualityReport.total_rows.toLocaleString('id-ID')} baris
+                      </span>
+                    </div>
                     <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 mt-2">
-                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                       <span>{qualityReport.is_valid ? 'Lolos Audit' : 'Perlu Koreksi'}</span>
                     </span>
                   </div>
-                  <CircularGauge
-                    value={validityPercentage}
-                    size={76}
-                    strokeWidth={6}
-                    colorGradient="green"
-                    textColor="dark"
-                    variant="circle"
-                    unit="%"
-                  />
+                  <div className="shrink-0">
+                    <CircularGauge
+                      value={validityPercentage}
+                      size={76}
+                      strokeWidth={6}
+                      colorGradient="green"
+                      textColor="dark"
+                      variant="circle"
+                      unit="%"
+                    />
+                  </div>
                 </div>
 
                 {/* Card 2: Valid Rows Count */}
@@ -139,7 +202,7 @@ export const DataIngestionSection: React.FC<DataIngestionProps> = ({
                     <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
                   </div>
                   <p className="text-3xl font-bold font-mono text-slate-900 my-2">
-                    {qualityReport.accepted_rows}
+                    {qualityReport.accepted_rows.toLocaleString('id-ID')}
                   </p>
                   <span className="text-xs text-slate-500 font-normal">Siap untuk regresi US DOE</span>
                 </div>
@@ -151,7 +214,7 @@ export const DataIngestionSection: React.FC<DataIngestionProps> = ({
                     <span className="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
                   </div>
                   <p className="text-3xl font-bold font-mono text-slate-900 my-2">
-                    {qualityReport.rejected_rows}
+                    {qualityReport.rejected_rows.toLocaleString('id-ID')}
                   </p>
                   <span className="text-xs text-slate-500 font-normal">Nilai negatif / corrupt</span>
                 </div>
@@ -193,3 +256,5 @@ export const DataIngestionSection: React.FC<DataIngestionProps> = ({
     </div>
   );
 };
+
+export const DataIngestionSection = React.memo(DataIngestionSectionComponent);

@@ -30,7 +30,7 @@ interface CNGSimulatorProps {
   isProcessing: boolean;
 }
 
-export const CNGSimulatorSection: React.FC<CNGSimulatorProps> = ({
+const CNGSimulatorSectionComponent: React.FC<CNGSimulatorProps> = ({
   cngResult,
   params,
   onParamChange,
@@ -88,14 +88,14 @@ export const CNGSimulatorSection: React.FC<CNGSimulatorProps> = ({
             <div className="flex justify-between text-xs text-slate-600 font-medium">
               <span>Harga {params.current_fuel}:</span>
               <span className="font-sans font-bold text-amber-600">
-                Rp {params.current_fuel_price_idr.toLocaleString('id-ID')} / {params.current_fuel === 'DIESEL' ? 'liter' : 'kg'}
+                Rp {params.current_fuel_price_idr.toLocaleString('id-ID')} / {params.current_fuel === 'CNG' ? 'MMBTU' : params.current_fuel === 'DIESEL' ? 'liter' : 'kg'}
               </span>
             </div>
             <input
               type="range"
-              min="10000"
-              max="22000"
-              step="250"
+              min={params.current_fuel === 'CNG' ? '180000' : '10000'}
+              max={params.current_fuel === 'CNG' ? '290000' : '22000'}
+              step={params.current_fuel === 'CNG' ? '2500' : '250'}
               value={params.current_fuel_price_idr}
               onChange={(e) => onParamChange('current_fuel_price_idr', parseFloat(e.target.value))}
               className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-emerald-600"
@@ -202,12 +202,12 @@ export const CNGSimulatorSection: React.FC<CNGSimulatorProps> = ({
                     priorityText="High priority"
                     priorityColor="green"
                     benefitLabel="Expected Benefit"
-                    benefitValue={`Rp ${(cngResult.annual_gross_savings_idr / 1000000).toLocaleString('id-ID', { maximumFractionDigits: 0 })} Jt`}
+                    benefitValue={`Rp ${(Math.max(0, cngResult.annual_gross_savings_idr) / 1000000).toLocaleString('id-ID', { maximumFractionDigits: 0 })} Jt`}
                     benefitColor="text-emerald-600"
-                    gaugeValue={Number(cngResult.cost_savings_percent.toFixed(1))}
+                    gaugeValue={Number(Math.max(0, cngResult.cost_savings_percent).toFixed(1))}
                     gaugeGradient="green"
-                    gaugeSublabel="HEMAT"
-                    description={`Efisiensi LHV 1.055 GJ/MMBTU @ ${(params.target_cng_efficiency * 100).toFixed(0)}% efisiensi. Payback investasi ${cngResult.payback_period_months.toFixed(1)} bulan.`}
+                    gaugeSublabel={cngResult.cost_savings_percent >= 0 ? "HEMAT" : "OPTIMAL"}
+                    description={`Efisiensi LHV 1.055 GJ/MMBTU @ ${(params.target_cng_efficiency * 100).toFixed(0)}% efisiensi. Payback investasi ${cngResult.annual_gross_savings_idr > 0 ? `${cngResult.payback_period_months.toFixed(1)} bulan.` : 'N/A (biaya setara).'}`}
                   />
 
                   {/* Gridora Card 2: Bahan Bakar Eksisting */}
@@ -219,12 +219,18 @@ export const CNGSimulatorSection: React.FC<CNGSimulatorProps> = ({
                     priorityText="Medium priority"
                     priorityColor="blue"
                     benefitLabel="Biaya Eksisting"
-                    benefitValue={`Rp ${params.current_fuel_price_idr.toLocaleString('id-ID')} / kg`}
+                    benefitValue={`Rp ${params.current_fuel_price_idr.toLocaleString('id-ID')} / ${params.current_fuel === 'CNG' ? 'MMBTU' : params.current_fuel === 'DIESEL' ? 'liter' : 'kg'}`}
                     benefitColor="text-sky-600"
                     gaugeValue={Number((params.current_thermal_efficiency * 100).toFixed(0))}
                     gaugeGradient="blue"
                     gaugeSublabel="EFISIENSI"
-                    description={`Dasar acuan: LHV 46.1 MJ/kg @ ${(params.current_thermal_efficiency * 100).toFixed(0)}% efisiensi termal pembakaran eksisting.`}
+                    description={
+                      params.current_fuel === 'CNG'
+                        ? `Dasar acuan: LHV 1.055 GJ/MMBTU @ ${(params.current_thermal_efficiency * 100).toFixed(0)}% efisiensi termal pasokan retail eksisting.`
+                        : params.current_fuel === 'DIESEL'
+                        ? `Dasar acuan: LHV 35.8 MJ/liter @ ${(params.current_thermal_efficiency * 100).toFixed(0)}% efisiensi termal pembakaran eksisting.`
+                        : `Dasar acuan: LHV 46.1 MJ/kg @ ${(params.current_thermal_efficiency * 100).toFixed(0)}% efisiensi termal pembakaran eksisting.`
+                    }
                   />
                 </div>
               </div>
@@ -238,7 +244,7 @@ export const CNGSimulatorSection: React.FC<CNGSimulatorProps> = ({
                     <span>Penghematan Bruto / Thn</span>
                   </div>
                   <p className="text-xl md:text-2xl font-bold font-sans text-slate-900">
-                    Rp {(cngResult.annual_gross_savings_idr / 1000000).toLocaleString('id-ID', { maximumFractionDigits: 0 })} Jt
+                    Rp {(Math.max(0, cngResult.annual_gross_savings_idr) / 1000000).toLocaleString('id-ID', { maximumFractionDigits: 0 })} Jt
                   </p>
                   <span className="text-xs text-emerald-600 font-medium mt-1 block">Net OPEX fuel reduction</span>
                 </div>
@@ -250,9 +256,10 @@ export const CNGSimulatorSection: React.FC<CNGSimulatorProps> = ({
                     <span>Payback CAPEX</span>
                   </div>
                   <p className="text-xl md:text-2xl font-bold font-sans text-slate-900">
-                    {cngResult.payback_period_months.toFixed(1)} <span className="text-sm font-normal text-slate-500">Bulan</span>
+                    {cngResult.annual_gross_savings_idr > 0 ? `${cngResult.payback_period_months.toFixed(1)} ` : 'Optimal '}
+                    <span className="text-sm font-normal text-slate-500">Bulan</span>
                   </p>
-                  <span className="text-xs text-slate-500 font-normal mt-1 block">ROI: {cngResult.simple_roi_percent.toFixed(0)}% per tahun</span>
+                  <span className="text-xs text-slate-500 font-normal mt-1 block">ROI: {cngResult.annual_gross_savings_idr > 0 ? cngResult.simple_roi_percent.toFixed(0) : '0'}% per tahun</span>
                 </div>
 
                 {/* Carbon Emission Reduction */}
@@ -303,3 +310,5 @@ export const CNGSimulatorSection: React.FC<CNGSimulatorProps> = ({
     </div>
   );
 };
+
+export const CNGSimulatorSection = React.memo(CNGSimulatorSectionComponent);
