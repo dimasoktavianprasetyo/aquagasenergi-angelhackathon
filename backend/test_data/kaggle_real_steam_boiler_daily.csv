@@ -1,0 +1,6 @@
+timestamp,production_output,operating_hours,fuel_consumption,fuel_type,equipment_id
+2022-03-28,1433.0,24.0,160854.7,DIESEL,Kaggle-Nature-SuperheatedBoiler-60T
+2022-03-29,1452.1,24.0,163556.4,DIESEL,Kaggle-Nature-SuperheatedBoiler-60T
+2022-03-30,1418.8,24.0,159637.8,DIESEL,Kaggle-Nature-SuperheatedBoiler-60T
+2022-03-31,1427.6,24.0,160915.8,DIESEL,Kaggle-Nature-SuperheatedBoiler-60T
+2022-04-01,848.0,14.0,95483.5,DIESEL,Kaggle-Nature-SuperheatedBoiler-60T

@@ -1,0 +1,157 @@
+syntax = "proto3";
+
+package energy_copilot;
+
+// ==========================================
+// DATA INGESTION & QUALITY
+// ==========================================
+
+message RawDataPoint {
+  string timestamp = 1;
+  double production_output = 2; // e.g. tonnes or units
+  double operating_hours = 3;   // hours
+  double fuel_consumption = 4;  // in native unit (kg or liter or Nm3)
+  string fuel_type = 5;         // "LPG", "DIESEL", "NATURAL_GAS", etc.
+  string equipment_id = 6;      // "Boiler-01", "Oven-02", etc.
+}
+
+message IngestRequest {
+  string filename = 1;
+  bytes csv_content = 2;
+  string default_fuel_type = 3;
+}
+
+message DataQualityIssue {
+  int32 row_index = 1;
+  string column_name = 2;
+  string issue_type = 3; // "MISSING_VALUE", "UNKNOWN_UNIT", "ZERO_OUTPUT_RUNNING", "OUTLIER"
+  string description = 4;
+}
+
+message QualityReport {
+  bool is_valid = 1;
+  int32 total_rows = 2;
+  int32 accepted_rows = 3;
+  int32 rejected_rows = 4;
+  repeated DataQualityIssue issues = 5;
+  repeated NormalizedDataPoint normalized_data = 6;
+  string summary_message = 7;
+}
+
+message NormalizedDataPoint {
+  string timestamp = 1;
+  double production_output = 2; // ton
+  double operating_hours = 3;   // hr
+  double fuel_consumption_native = 4;
+  string native_unit = 5;
+  double energy_input_gj = 6;   // Gigajoules (normalized)
+  double energy_input_mmbtu = 7;
+  double ike_gj_per_ton = 8;    // IKE (Intensitas Konsumsi Energi)
+  string equipment_id = 9;
+}
+
+// ==========================================
+// IKE & BASELINE MODELING (DOE GUIDANCE)
+// ==========================================
+
+message BaselineRequest {
+  repeated NormalizedDataPoint data = 1;
+  string target_equipment_id = 2;
+}
+
+message BaselineModelParams {
+  double r_squared = 1;
+  double slope_production = 2;   // GJ per ton
+  double slope_hours = 3;        // GJ per operating hour
+  double base_load_intercept = 4; // GJ base load
+  string regression_formula = 5; // E = m1*P + m2*H + c
+  double std_residual = 6;
+  string baseline_period_start = 7;
+  string baseline_period_end = 8;
+}
+
+message AnomalyPoint {
+  string timestamp = 1;
+  double actual_energy_gj = 2;
+  double baseline_energy_gj = 3;
+  double deviation_gj = 4;
+  double deviation_percent = 5;
+  bool is_anomaly = 6;
+  double estimated_excess_cost_idr = 7;
+  string probable_cause = 8;
+}
+
+message BaselineResponse {
+  BaselineModelParams model = 1;
+  repeated AnomalyPoint points = 2;
+  double average_ike = 3;
+  double total_actual_energy_gj = 4;
+  double total_baseline_energy_gj = 5;
+  double total_wasted_energy_gj = 6;
+  double total_wasted_cost_idr = 7;
+  repeated TraceabilityStep audit_trail = 8;
+}
+
+// ==========================================
+// CNG TRANSITION & EMISSION SIMULATION
+// ==========================================
+
+message CNGSimRequest {
+  string current_fuel = 1;          // "LPG" or "DIESEL"
+  double current_fuel_price_idr = 2;// Rp per kg (LPG) or Rp per liter (Diesel)
+  double current_thermal_efficiency = 3; // e.g. 0.78 (78%)
+  
+  double cng_price_idr_per_mmbtu = 4;   // e.g. Rp 215,000 / MMBTU (~$13.5)
+  double target_cng_efficiency = 5;      // e.g. 0.84 (84% with modern burner)
+  double retrofit_capex_idr = 6;         // e.g. Rp 150,000,000 for dual-fuel/CNG burner
+  
+  double annual_energy_demand_gj = 7;    // Annual useful thermal energy needed
+}
+
+message CNGSimResult {
+  double current_cost_per_useful_gj = 1; // IDR / useful GJ
+  double cng_cost_per_useful_gj = 2;     // IDR / useful GJ
+  double cost_savings_percent = 3;
+  
+  double annual_current_fuel_cost = 4;
+  double annual_cng_fuel_cost = 5;
+  double annual_gross_savings_idr = 6;
+  
+  double payback_period_months = 7;
+  double simple_roi_percent = 8;
+  
+  double current_annual_co2_tonnes = 9;
+  double cng_annual_co2_tonnes = 10;
+  double co2_reduction_tonnes = 11;
+  double co2_reduction_percent = 12;
+  
+  bool is_recommended = 13;
+  string recommendation_summary = 14;
+  repeated TraceabilityStep audit_trail = 15;
+}
+
+// ==========================================
+// AUDIT & TRACEABILITY
+// ==========================================
+
+message TraceabilityStep {
+  string step_name = 1;
+  string formula_applied = 2;
+  string input_parameters = 3;
+  string calculation_result = 4;
+  string standard_reference = 5; // e.g. "US DOE Baseline Guidance 2020", "IPCC 2006 Fuel Factors"
+  string engineering_rationale = 6;
+}
+
+// ==========================================
+// SERVICES DEFINITIONS
+// ==========================================
+
+service EnergyAnalyticsService {
+  rpc IngestAndAudit(IngestRequest) returns (QualityReport);
+  rpc CalculateBaselineAndAnomalies(BaselineRequest) returns (BaselineResponse);
+}
+
+service CNGTransitionService {
+  rpc SimulateCNGTransition(CNGSimRequest) returns (CNGSimResult);
+}
