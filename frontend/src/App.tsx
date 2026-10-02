@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Header } from './components/Header';
+import { FloatingSidebarDock } from './components/FloatingSidebarDock';
+import { TopKpiCards } from './components/TopKpiCards';
+import { RightSidebarPanel } from './components/RightSidebarPanel';
 import { DataIngestionSection } from './components/DataIngestionSection';
 import { IKEBaselineSection } from './components/IKEBaselineSection';
 import { CNGSimulatorSection } from './components/CNGSimulatorSection';
@@ -8,6 +11,7 @@ import { TraceabilityModal } from './components/TraceabilityModal';
 import { copilotSocket } from './services/websocket';
 import { getSampleDataset, CaseStudyType, GranularityType, INDMIRA_AGRO_CSV } from './services/sampleData';
 import { PipelineCompletePayload, WebSocketMessage } from './types';
+import { PipelineLoadingModal } from './components/PipelineLoadingModal';
 import { Activity, ShieldCheck, Flame, RefreshCw } from 'lucide-react';
 
 export const App: React.FC = () => {
@@ -44,7 +48,9 @@ export const App: React.FC = () => {
           if (msg.payload) {
             setPipelineResult(msg.payload);
           }
-          setIsProcessing(false);
+          setTimeout(() => {
+            setIsProcessing(false);
+          }, 800);
         }
       },
       (connected: boolean) => {
@@ -58,8 +64,8 @@ export const App: React.FC = () => {
 
   const runPipeline = async (csvData: string, fuelType: string, currentParams = cngParams) => {
     setIsProcessing(true);
-    setProgress(15);
-    setStageMessage('Memulai Inisiasi Pipeline Analitik...');
+    setProgress(0);
+    setStageMessage('Memanggil gRPC Analytics: Validasi Integritas Data CSV...');
 
     const paramsToSend = { ...currentParams, current_fuel: fuelType };
 
@@ -69,20 +75,36 @@ export const App: React.FC = () => {
       cng_params: paramsToSend
     });
 
-    // If WebSocket is not open, use resilient REST fallback
+    // If WebSocket is not open, use resilient 5-second paced REST fallback
     if (!sent) {
       try {
-        setStageMessage('Memproses melalui REST API Gateway fallback...');
-        setProgress(50);
+        setStageMessage('Memanggil gRPC Analytics: Validasi Integritas Data CSV...');
+        setProgress(20);
+        await new Promise((r) => setTimeout(r, 1200));
+
+        setStageMessage('Normalisasi Kalor Berhasil: titik data dikonversi ke basis GJ/MMBTU.');
+        setProgress(45);
+        await new Promise((r) => setTimeout(r, 1300));
+
+        setStageMessage('Regresi Baseline US DOE & Deteksi Anomali Operasional (+1.5σ)...');
+        setProgress(70);
+        await new Promise((r) => setTimeout(r, 1300));
+
+        setStageMessage('Menghitung Biaya Panas Berguna (LHV) & Reduksi Emisi CO₂...');
+        setProgress(90);
         const result = await copilotSocket.runPipelineRestFallback(csvData, fuelType, paramsToSend);
+        await new Promise((r) => setTimeout(r, 1200));
+
         setPipelineResult(result);
         setProgress(100);
         setStageMessage('Analisis Selesai via REST Gateway.');
+        setTimeout(() => {
+          setIsProcessing(false);
+        }, 800);
       } catch (err) {
         console.error('REST Fallback Error:', err);
         setStageMessage('Koneksi backend belum aktif. Pastikan backend/run_all.py berjalan.');
-      } finally {
-        setIsProcessing(false);
+        setTimeout(() => setIsProcessing(false), 1500);
       }
     }
   };
@@ -159,91 +181,126 @@ export const App: React.FC = () => {
     runPipeline(csvContent, selectedFuel);
   };
 
+  const handleHeaderUploadClick = () => {
+    const input = document.getElementById('csv-file-input') as HTMLInputElement;
+    if (input) {
+      input.click();
+    }
+    const el = document.getElementById('section-data-ingestion');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
-    <div className="min-h-screen text-slate-100 p-4 md:p-8 max-w-7xl mx-auto selection:bg-cyan-500 selection:text-slate-900">
-      {/* App Header with Case Switcher & Granularity Toggle */}
-      <Header
-        wsConnected={wsConnected}
-        activeCase={activeCase}
-        onSelectCase={handleSelectCase}
-        granularity={granularity}
-        onSelectGranularity={handleSelectGranularity}
-        isProcessing={isProcessing}
-      />
+    <div className="min-h-screen bg-[#edf0f5] text-slate-900 py-6 px-3 sm:px-5 md:px-8 selection:bg-emerald-500 selection:text-white font-sans">
+      <div className="max-w-[1560px] mx-auto flex gap-6 items-start">
+        {/* Left Floating Capsule Dock (Exact from user reference screenshot) */}
+        <FloatingSidebarDock onOpenAudit={() => setIsAuditModalOpen(true)} />
 
-      {/* Real-time Streaming Progress Bar */}
-      {isProcessing && (
-        <div className="glass-panel p-4 mb-6 border border-cyan-500/40 animate-pulse">
-          <div className="flex items-center justify-between text-xs text-cyan-300 font-mono mb-2">
-            <span className="flex items-center gap-2">
-              <RefreshCw className="w-3.5 h-3.5 animate-spin text-cyan-400" />
-              <span>{stageMessage}</span>
-            </span>
-            <span className="font-bold">{progress}%</span>
+        {/* Main Executive Content Canvas */}
+        <main className="flex-1 min-w-0">
+          {/* App Header with Case Switcher & Upload CSV */}
+          <Header
+            wsConnected={wsConnected}
+            activeCase={activeCase}
+            onSelectCase={handleSelectCase}
+            isProcessing={isProcessing}
+            onTriggerUpload={handleHeaderUploadClick}
+          />
+
+          {/* Real-time Streaming Pipeline Loading Modal */}
+          <PipelineLoadingModal
+            isOpen={isProcessing}
+            progress={progress}
+            stageMessage={stageMessage}
+          />
+
+          {/* Top 4 Floating KPI Cards (Exact from user reference screenshot) */}
+          <TopKpiCards
+            baseline={pipelineResult?.baseline || null}
+            quality={pipelineResult?.quality || null}
+            cng={pipelineResult?.cng || null}
+            currentFuel={selectedFuel}
+          />
+
+          {/* Desktop Split Grid (Exact from user reference screenshot) */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-7 items-stretch">
+            {/* Left Column (7-8 cols): Sleek Dark Card - Load Forecast vs. Actual */}
+            <div className="lg:col-span-7 xl:col-span-8 flex flex-col">
+              <IKEBaselineSection
+                baselineData={pipelineResult?.baseline || null}
+                granularity={granularity}
+                onSelectGranularity={handleSelectGranularity}
+                isProcessing={isProcessing}
+              />
+            </div>
+
+            {/* Right Column (4-5 cols): 2 Stacked Cards - Solusi Transisi CNG + Useful Heat Breakdown */}
+            <div className="lg:col-span-5 xl:col-span-4 flex flex-col">
+              <RightSidebarPanel
+                baseline={pipelineResult?.baseline || null}
+                cng={pipelineResult?.cng || null}
+                currentFuel={selectedFuel}
+                onOpenSimulator={() => {
+                  const el = document.getElementById('section-cng-simulator');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }}
+              />
+            </div>
           </div>
-          <div className="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-slate-800">
-            <div
-              className="bg-gradient-to-r from-cyan-500 to-blue-500 h-2 rounded-full transition-all duration-300 shadow-sm shadow-cyan-400/50"
-              style={{ width: `${progress}%` }}
-            ></div>
-          </div>
-        </div>
-      )}
 
-      {/* Section 1: Ingestion & Quality */}
-      <DataIngestionSection
-        qualityReport={pipelineResult?.quality || null}
-        onFileUpload={handleFileUpload}
-        selectedFuel={selectedFuel}
-        onFuelChange={(fuel) => {
-          setSelectedFuel(fuel);
-          const updated = { ...cngParams, current_fuel: fuel };
-          setCngParams(updated);
-          runPipeline(csvContent, fuel, updated);
-        }}
-        isProcessing={isProcessing}
-      />
+          {/* Section 1: Ingestion & Quality (Upload CSV Dataset & Sensor Integrity Audit) */}
+          <DataIngestionSection
+            qualityReport={pipelineResult?.quality || null}
+            onFileUpload={handleFileUpload}
+            selectedFuel={selectedFuel}
+            onFuelChange={(fuel) => {
+              setSelectedFuel(fuel);
+              const updated = { ...cngParams, current_fuel: fuel };
+              setCngParams(updated);
+              runPipeline(csvContent, fuel, updated);
+            }}
+            isProcessing={isProcessing}
+          />
 
-      {/* Section 2: IKE & Baseline Analytics */}
-      <IKEBaselineSection
-        baselineData={pipelineResult?.baseline || null}
-      />
+          {/* Section 2: CNG Simulator & Techno-Economic Evaluation */}
+          <CNGSimulatorSection
+            cngResult={pipelineResult?.cng || null}
+            params={cngParams}
+            onParamChange={handleParamChange}
+            onRunSimulation={handleReRunSimulation}
+            isProcessing={isProcessing}
+          />
 
-      {/* Section 3: CNG Simulator */}
-      <CNGSimulatorSection
-        cngResult={pipelineResult?.cng || null}
-        params={cngParams}
-        onParamChange={handleParamChange}
-        onRunSimulation={handleReRunSimulation}
-        isProcessing={isProcessing}
-      />
+          {/* Section 4: Decision Support Report */}
+          <DecisionReport
+            data={pipelineResult}
+            onOpenAudit={() => setIsAuditModalOpen(true)}
+            activeCase={activeCase}
+          />
 
-      {/* Section 4: Decision Support Report */}
-      <DecisionReport
-        data={pipelineResult}
-        onOpenAudit={() => setIsAuditModalOpen(true)}
-        activeCase={activeCase}
-      />
+          {/* Traceability Audit Trail Modal */}
+          <TraceabilityModal
+            isOpen={isAuditModalOpen}
+            onClose={() => setIsAuditModalOpen(false)}
+            auditTrail={pipelineResult?.audit_trail || []}
+          />
 
-      {/* Traceability Audit Trail Modal */}
-      <TraceabilityModal
-        isOpen={isAuditModalOpen}
-        onClose={() => setIsAuditModalOpen(false)}
-        auditTrail={pipelineResult?.audit_trail || []}
-      />
-
-      {/* Hackathon Footer */}
-      <footer className="mt-12 pt-6 border-t border-slate-800 text-center text-xs text-slate-500 space-y-2">
-        <p className="font-medium text-slate-400">
-          Industrial Energy Efficiency Copilot • Prioritas 1: Industrial Energy Efficiency Copilot
-        </p>
-        <p>
-          ANGEL Innovation Hackathon 2026 | Pengusul: <span className="text-cyan-400 font-semibold">PT Aqua Gas Energi (AGE)</span> | Target Klien: <span className="text-emerald-400 font-semibold">PT Indmira Global Energi</span>
-        </p>
-        <p className="text-[11px] text-slate-600">
-          Tim Pengusul: Dimas Oktavian Prasetyo (Product Lead & UI/UX) & Tim Rekayasa Termal PT Aqua Gas Energi
-        </p>
-      </footer>
+          {/* Hackathon Footer */}
+          <footer className="mt-14 pt-8 pb-12 border-t border-slate-200/80 text-center text-xs text-slate-500 space-y-2 font-light">
+            <p className="font-semibold text-slate-700">
+              Industrial Energy Efficiency Copilot • Prioritas 1: Industrial Energy Efficiency Copilot
+            </p>
+            <p>
+              ANGEL Innovation Hackathon 2026 | Pengusul: <span className="text-cyan-700 font-semibold">PT Aqua Gas Energi (AGE)</span> | Target Klien: <span className="text-emerald-700 font-semibold">PT Indmira Global Energi</span>
+            </p>
+            <p className="text-[11px] text-slate-400">
+              Tim Pengusul: Dimas Oktavian Prasetyo (Product Lead & UI/UX) & Tim Rekayasa Termal PT Aqua Gas Energi
+            </p>
+          </footer>
+        </main>
+      </div>
     </div>
   );
 };
