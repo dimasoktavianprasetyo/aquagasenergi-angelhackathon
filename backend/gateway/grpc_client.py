@@ -22,16 +22,21 @@ def get_cng_client():
     return pb2_grpc.CNGTransitionServiceStub(channel)
 
 def call_ingest_and_audit(csv_bytes: bytes, filename: str, default_fuel: str = "LPG"):
-    client = get_analytics_client()
     req = pb2.IngestRequest(
         filename=filename,
         csv_content=csv_bytes,
         default_fuel_type=default_fuel
     )
-    return client.IngestAndAudit(req)
+    try:
+        client = get_analytics_client()
+        return client.IngestAndAudit(req, timeout=3.0)
+    except Exception:
+        # In-process fallback when gRPC daemon is not reachable (e.g. Serverless / single process)
+        from services.analytics_service import EnergyAnalyticsServiceServicer
+        servicer = EnergyAnalyticsServiceServicer()
+        return servicer.IngestAndAudit(req, None)
 
 def call_baseline_and_anomalies(normalized_points):
-    client = get_analytics_client()
     proto_points = []
     for pt in normalized_points:
         proto_points.append(pb2.NormalizedDataPoint(
@@ -46,10 +51,15 @@ def call_baseline_and_anomalies(normalized_points):
             equipment_id=pt.get("equipment_id", "Boiler-01")
         ))
     req = pb2.BaselineRequest(data=proto_points)
-    return client.CalculateBaselineAndAnomalies(req)
+    try:
+        client = get_analytics_client()
+        return client.CalculateBaselineAndAnomalies(req, timeout=5.0)
+    except Exception:
+        from services.analytics_service import EnergyAnalyticsServiceServicer
+        servicer = EnergyAnalyticsServiceServicer()
+        return servicer.CalculateBaselineAndAnomalies(req, None)
 
 def call_simulate_cng(params: dict):
-    client = get_cng_client()
     req = pb2.CNGSimRequest(
         current_fuel=params.get("current_fuel", "LPG"),
         current_fuel_price_idr=float(params.get("current_fuel_price_idr", 14000.0)),
@@ -59,4 +69,10 @@ def call_simulate_cng(params: dict):
         retrofit_capex_idr=float(params.get("retrofit_capex_idr", 150000000.0)),
         annual_energy_demand_gj=float(params.get("annual_energy_demand_gj", 12000.0))
     )
-    return client.SimulateCNGTransition(req)
+    try:
+        client = get_cng_client()
+        return client.SimulateCNGTransition(req, timeout=3.0)
+    except Exception:
+        from services.cng_service import CNGTransitionServiceServicer
+        servicer = CNGTransitionServiceServicer()
+        return servicer.SimulateCNGTransition(req, None)

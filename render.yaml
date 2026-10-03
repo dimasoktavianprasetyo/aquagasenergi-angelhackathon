@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: age-energy-copilot-backend
+    env: docker
+    dockerfilePath: backend/Dockerfile
+    plan: free
+    region: singapore
+    envVars:
+      - key: PORT
+        value: 8000
+      - key: ANALYTICS_HOST
+        value: localhost:50051
+      - key: CNG_HOST
+        value: localhost:50052

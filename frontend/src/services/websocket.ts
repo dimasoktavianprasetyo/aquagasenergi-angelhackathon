@@ -9,8 +9,30 @@ class CopilotSocketService {
   private onStatusChangeCallback: ((connected: boolean) => void) | null = null;
   private reconnectInterval: any = null;
 
-  constructor(url: string = 'ws://localhost:8000/ws/copilot') {
-    this.url = url;
+  private getApiBase(): string {
+    const envApi = import.meta.env.VITE_API_URL;
+    if (envApi) return envApi.replace(/\/$/, '');
+    if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
+      return `${window.location.protocol}//${window.location.host}`;
+    }
+    return 'http://localhost:8000';
+  }
+
+  constructor(url?: string) {
+    if (url) {
+      this.url = url;
+    } else {
+      const envWs = import.meta.env.VITE_WS_URL;
+      if (envWs) {
+        this.url = envWs;
+      } else {
+        const isSecure = typeof window !== 'undefined' && window.location.protocol === 'https:';
+        const host = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
+          ? window.location.host
+          : 'localhost:8000';
+        this.url = `${isSecure ? 'wss:' : 'ws:'}//${host}/ws/copilot`;
+      }
+    }
   }
 
   public connect(onMessage: MessageHandler, onStatusChange: (connected: boolean) => void) {
@@ -21,7 +43,7 @@ class CopilotSocketService {
       this.socket = new WebSocket(this.url);
 
       this.socket.onopen = () => {
-        console.log('[WebSocket] Terhubung dengan Gateway Copilot.');
+        console.log('[WebSocket] Terhubung dengan Gateway Copilot:', this.url);
         this.onStatusChangeCallback?.(true);
         if (this.reconnectInterval) {
           clearInterval(this.reconnectInterval);
@@ -76,20 +98,21 @@ class CopilotSocketService {
 
   // REST Fallback in case WebSocket is unavailable
   public async runPipelineRestFallback(csvRaw: string, fuelType: string, cngParams: any): Promise<PipelineCompletePayload> {
+    const apiBase = this.getApiBase();
     const formData = new FormData();
     const blob = new Blob([csvRaw], { type: 'text/csv' });
     formData.append('file', blob, 'sample_boiler_data.csv');
     formData.append('default_fuel', fuelType);
 
     // Step 1: Upload & Audit
-    const uploadRes = await fetch('http://localhost:8000/api/upload-csv', {
+    const uploadRes = await fetch(`${apiBase}/api/upload-csv`, {
       method: 'POST',
       body: formData
     });
     const qualityReport = await uploadRes.json();
 
     // Step 2: Baseline
-    const baselineRes = await fetch('http://localhost:8000/api/calculate-baseline', {
+    const baselineRes = await fetch(`${apiBase}/api/calculate-baseline`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -101,7 +124,7 @@ class CopilotSocketService {
 
     // Step 3: CNG Simulation
     cngParams.current_fuel = fuelType;
-    const cngRes = await fetch('http://localhost:8000/api/simulate-cng', {
+    const cngRes = await fetch(`${apiBase}/api/simulate-cng`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(cngParams)

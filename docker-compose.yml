@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: age-copilot-backend
+    ports:
+      - "8000:8000"
+      - "50051:50051"
+      - "50052:50052"
+    environment:
+      - PORT=8000
+      - ANALYTICS_HOST=localhost:50051
+      - CNG_HOST=localhost:50052
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: age-copilot-frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
